@@ -1,10 +1,9 @@
 import { useCallback, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence, MotionConfig, useScroll, useTransform, useReducedMotion } from "motion/react";
-import { Clock, CreditCard } from "lucide-react";
 import Hero, { Navbar } from "./Hero.jsx";
 import {
-  SERVICES, DURATIONS, THERAPISTS, STEP, range, dayKey, hoursOf, slotCount,
-  fmt, brl, price, freeTherapist, starts, allBusy, nextDays,
+  SERVICE, DURATIONS, THERAPISTS, STEP, range, dayKey, hoursOf, slotCount,
+  fmt, freeTherapist, starts, allBusy, nextDays,
 } from "./agenda.js";
 
 const DAYS = nextDays(21);
@@ -15,6 +14,7 @@ const FADE = { initial: { opacity: 0, y: 10 }, animate: { opacity: 1, y: 0 }, ex
 const TITLE = [["Escolha"], ["o"], ["seu"], ["momento", true]];
 const WORDS = { show: { transition: { staggerChildren: 0.09 } } };
 const WORD = { hidden: { y: "110%" }, show: { y: 0, transition: { duration: 0.9, ease: EASE } } };
+const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const nameOf = id => THERAPISTS.find(t => t.id === id).name;
 const date = (d, opts) => d.toLocaleDateString("pt-BR", opts);
 
@@ -26,24 +26,21 @@ function relDay(d) {
 }
 
 export default function App() {
-  const [svcId, setSvcId] = useState("relax");
   const [dur, setDur] = useState(60);
   const [ther, setTher] = useState("any");
   const [pickedDay, setPickedDay] = useState(null);
   const [pickedStart, setPickedStart] = useState(null);
   const [done, setDone] = useState(null);
 
-  // Entrada da agenda ligada à rolagem: o cartão sobe, endireita e cresce enquanto entra na tela.
+  // Entrada da agenda ligada à rolagem: o conteúdo sobe, endireita e cresce enquanto entra na tela.
   const stageRef = useRef(null);
   const reduceMotion = useReducedMotion();
   const { scrollYProgress: enter } = useScroll({ target: stageRef, offset: ["start end", "start 0.25"] });
   const cardY = useTransform(enter, [0, 1], [160, 0]);
-  const cardScale = useTransform(enter, [0, 1], [0.86, 1]);
-  const cardTilt = useTransform(enter, [0, 1], [16, 0]);
+  const cardScale = useTransform(enter, [0, 1], [0.9, 1]);
+  const cardTilt = useTransform(enter, [0, 1], [12, 0]);
   const cardOpacity = useTransform(enter, [0, 0.55], [0, 1]);
-  const blobY = useTransform(enter, [0, 1], [-120, 0]);
 
-  const svc = SERVICES.find(s => s.id === svcId);
   const n = dur / STEP;
   const counts = useMemo(() => DAYS.map(d => starts(d, n, ther).length), [n, ther]);
   // Dia escolhido some se ficar lotado com a nova combinação; cai no primeiro dia livre.
@@ -52,7 +49,7 @@ export default function App() {
   const free = useMemo(() => starts(day, n, ther), [day, n, ther]);
   const start = free.includes(pickedStart) ? pickedStart : null;
 
-  // Próxima sessão padrão (Relaxante, 60 min, qualquer terapeuta) para o CTA do hero.
+  // Próxima sessão padrão (60 min, qualquer terapeuta) para o CTA do hero.
   const next = useMemo(() => {
     for (const d of DAYS) {
       const s = starts(d, 60 / STEP, "any");
@@ -63,16 +60,12 @@ export default function App() {
 
   const reserveFromHero = useCallback(nx => {
     if (nx) {
-      setSvcId("relax"); setDur(60); setTher("any");
+      setDur(60); setTher("any");
       setPickedDay(nx.day); setPickedStart(nx.start); setDone(null);
     }
     document.getElementById("agenda")?.scrollIntoView({ behavior: "smooth" });
   }, []);
 
-  function chooseService(s) {
-    setSvcId(s.id);
-    if (s.min && dur < s.min) setDur(s.min);
-  }
   function chooseDay(d) { setPickedDay(d); setPickedStart(null); }
   function goToForm() {
     const f = document.getElementById("f-name");
@@ -80,14 +73,14 @@ export default function App() {
     f?.focus({ preventScroll: true });
   }
 
-  function confirm({ name }) {
+  function confirm({ name, email }) {
     const h = hoursOf(day);
     // ponytail: sem backend, a reserva só existe nesta tela; POST /reservas entra aqui
     setDone({
       code: Math.random().toString(36).slice(2, 7).toUpperCase(),
-      name,
+      name, email,
       when: `${date(day, { weekday: "long", day: "numeric", month: "long" })} às ${fmt(h, start)}`,
-      what: `${svc.name} · ${dur} min · ${brl(price(svc, dur))}`,
+      what: `${SERVICE} · ${dur} min`,
       ther: nameOf(freeTherapist(day, start, n, ther)),
     });
   }
@@ -101,120 +94,82 @@ export default function App() {
         <motion.div className="agenda-head"
           initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.4 }}
           transition={{ duration: 0.8, ease: EASE }}>
-          <div>
-            <span className="badge">Agenda aberta para as próximas 3 semanas</span>
-            <motion.h2 className="display" variants={WORDS} initial="hidden" whileInView="show" viewport={{ once: true, amount: 0.6 }}>
-              {TITLE.map(([w, italic]) => (
-                <span key={w} className="word"><motion.span variants={WORD}>{italic ? <em>{w}</em> : w}</motion.span></span>
-              ))}
-            </motion.h2>
-            <p className="lede">Tratamento, duração e um horário livre. A confirmação chega no seu WhatsApp e o pagamento é feito no local.</p>
-          </div>
+          <span className="badge">Agenda aberta para as próximas 3 semanas</span>
+          <motion.h2 className="display" variants={WORDS} initial="hidden" whileInView="show" viewport={{ once: true, amount: 0.6 }}>
+            {TITLE.map(([w, italic]) => (
+              <span key={w} className="word"><motion.span variants={WORD}>{italic ? <em>{w}</em> : w}</motion.span></span>
+            ))}
+          </motion.h2>
+          <p className="lede">{SERVICE}. Escolha a duração, o terapeuta e um horário livre. A confirmação chega por e-mail e WhatsApp.</p>
         </motion.div>
 
         <div className="stage" ref={stageRef}>
-          <motion.div className="blobs" aria-hidden="true" style={reduceMotion ? undefined : { y: blobY }}>
-            <div className="blob b1" />
-            <div className="blob b2" />
-          </motion.div>
-
           <motion.div className="booking"
             style={reduceMotion ? undefined : { y: cardY, scale: cardScale, rotateX: cardTilt, opacity: cardOpacity, transformPerspective: 1400, transformOrigin: "50% 0%" }}>
-            <div className="panel left">
-              <div className="event">
-                <p className="org">Pausa massoterapia</p>
-                <AnimatePresence mode="wait" initial={false}>
-                  <motion.h3 key={svc.id} className="event-title" {...FADE}>{svc.name}</motion.h3>
-                </AnimatePresence>
-                <ul className="facts">
-                  <li><Clock aria-hidden="true" /><Swap k={dur}>{dur} min</Swap></li>
-                  <li><CreditCard aria-hidden="true" /><Swap k={`${svcId}${dur}`}>{brl(price(svc, dur))}</Swap>&nbsp;· pagamento no local</li>
-                </ul>
+            <div className="flow">
+              <div className="options">
+                <Step n="01" title="Duração" id="duracao">
+                  <div className="chips" role="radiogroup" aria-labelledby="duracao-t">
+                    {DURATIONS.map(v => (
+                      <Chip key={v} group="dur" checked={v === dur} onChange={() => setDur(v)}>{v} min</Chip>
+                    ))}
+                  </div>
+                </Step>
+                <Step n="02" title="Terapeuta" id="terapeutas">
+                  <div className="chips" role="radiogroup" aria-labelledby="terapeutas-t">
+                    {THERAPISTS.map(t => (
+                      <Chip key={t.id} group="ther" checked={t.id === ther} onChange={() => setTher(t.id)}>{t.name}</Chip>
+                    ))}
+                  </div>
+                </Step>
               </div>
 
-              <fieldset className="step" id="tratamentos">
-                <legend>Tratamento</legend>
-                <div className="svc">
-                  {SERVICES.map(s => (
-                    <label key={s.id}>
-                      <input type="radio" name="svc" checked={s.id === svcId} onChange={() => chooseService(s)} />
-                      <b>{s.name}</b>
-                      <span className="price">a partir de {brl(price(s, s.min || 30))}</span>
-                      <AnimatePresence initial={false}>
-                        {s.id === svcId && (
-                          <motion.em key="desc"
-                            initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }}
-                            transition={{ duration: 0.3, ease: EASE }}>
-                            {s.desc}
-                          </motion.em>
-                        )}
-                      </AnimatePresence>
-                    </label>
-                  ))}
-                </div>
-              </fieldset>
-
-              <fieldset className="step">
-                <legend>Duração</legend>
-                <div className="chips">
-                  {DURATIONS.map(v => (
-                    <Chip key={v} group="dur" checked={v === dur} disabled={svc.min > v} onChange={() => setDur(v)}>
-                      {v} min <small>{brl(price(svc, v))}</small>
-                    </Chip>
-                  ))}
-                </div>
-              </fieldset>
-
-              <fieldset className="step" id="terapeutas">
-                <legend>Terapeuta</legend>
-                <div className="chips">
-                  {THERAPISTS.map(t => (
-                    <Chip key={t.id} group="ther" checked={t.id === ther} onChange={() => setTher(t.id)}>{t.name}</Chip>
-                  ))}
-                </div>
-              </fieldset>
-            </div>
-
-            <div className="panel right" id="horarios">
-              <section aria-labelledby="h-day">
-                <div className="when-head">
-                  <h3 id="h-day">Dia e horário</h3>
-                  <span>{date(day, { month: "long", year: "numeric" })}</span>
-                </div>
+              <Step n="03" title="Dia" id="horarios" aside={date(day, { month: "long", year: "numeric" })}>
                 <DayStrip day={day} counts={counts} onPick={chooseDay} />
-              </section>
+              </Step>
 
-              <section aria-labelledby="l-time" className="bar-wrap">
-                <div className="when-head">
-                  <span className="label" id="l-time">{date(day, { weekday: "long", day: "numeric" })}</span>
-                  <span>{hoursOf(day)[0]}h às {hoursOf(day)[1]}h</span>
+              <Step n="04" title="Horário" id="horario" aside={`${date(day, { weekday: "long", day: "numeric" })} · ${hoursOf(day)[0]}h às ${hoursOf(day)[1]}h`}>
+                <div className="bar-wrap">
+                  <DayBar day={day} n={n} ther={ther} start={start} onPick={setPickedStart} />
+                  <div className="legend">
+                    <span><i className="l-busy" />Ocupado</span><span><i className="l-sel" />Sua sessão</span>
+                  </div>
                 </div>
-                <DayBar day={day} n={n} ther={ther} start={start} onPick={setPickedStart} />
-                <div className="legend">
-                  <span><i className="l-busy" />Ocupado</span><span><i className="l-sel" />Sua sessão</span>
-                </div>
-              </section>
-
-              <Slots key={`${dayKey(day)}-${n}-${ther}`} day={day} free={free} start={start} onPick={setPickedStart} onGo={goToForm} />
+                <Slots key={`${dayKey(day)}-${n}-${ther}`} day={day} free={free} start={start} onPick={setPickedStart} onGo={goToForm} />
+              </Step>
             </div>
 
-            <section className="summary" aria-live="polite">
+            <aside className="summary" id="dados" aria-live="polite">
               <AnimatePresence mode="wait" initial={false}>
                 {done
-                  ? <motion.div key="done" className="sum-inner" {...FADE}>
+                  ? <motion.div key="done" {...FADE}>
                       <Done booking={done} onAgain={() => { setDone(null); setPickedStart(null); }} />
                     </motion.div>
-                  : <motion.div key="form" className="sum-inner" {...FADE}>
-                      <Summary svc={svc} dur={dur} day={day} start={start}
+                  : <motion.div key="form" {...FADE}>
+                      <Summary dur={dur} day={day} start={start}
                         therapist={start != null ? freeTherapist(day, start, n, ther) : ther === "any" ? null : ther}
                         onConfirm={confirm} />
                     </motion.div>}
               </AnimatePresence>
-            </section>
+            </aside>
           </motion.div>
         </div>
       </main>
     </MotionConfig>
+  );
+}
+
+// Etapa numerada do fluxo de reserva.
+function Step({ n, title, id, aside, children }) {
+  return (
+    <section className="step" id={id} aria-labelledby={`${id}-t`}>
+      <header className="step-head">
+        <span className="step-n">{n}</span>
+        <h3 id={`${id}-t`}>{title}</h3>
+        {aside && <span className="step-aside">{aside}</span>}
+      </header>
+      {children}
+    </section>
   );
 }
 
@@ -230,10 +185,10 @@ function Swap({ k, children }) {
 }
 
 // Opção em pílula; o fundo da escolhida desliza entre as opções (layoutId).
-function Chip({ group, checked, disabled, onChange, children }) {
+function Chip({ group, checked, onChange, children }) {
   return (
     <label className="chip">
-      <input type="radio" name={group} checked={checked} disabled={disabled} onChange={onChange} />
+      <input type="radio" name={group} checked={checked} onChange={onChange} />
       <span className="chip-body">
         {checked && <motion.span layoutId={`pill-${group}`} className="pill" transition={SPRING} />}
         <span className="txt">{children}</span>
@@ -346,8 +301,9 @@ function Slots({ day, free, start, onPick, onGo }) {
   );
 }
 
-function Summary({ svc, dur, day, start, therapist, onConfirm }) {
+function Summary({ dur, day, start, therapist, onConfirm }) {
   const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [err, setErr] = useState("");
   const dayTxt = date(day, { weekday: "long", day: "numeric", month: "short" });
@@ -355,56 +311,59 @@ function Summary({ svc, dur, day, start, therapist, onConfirm }) {
   function submit(e) {
     e.preventDefault();
     if (!name.trim()) return setErr("Informe seu nome.");
+    if (!EMAIL.test(email.trim())) return setErr("Informe um e-mail válido, ex.: nome@empresa.com.br.");
     if (phone.replace(/\D/g, "").length < 10) return setErr("Informe o WhatsApp com DDD, ex.: (11) 91234-5678.");
     setErr("");
-    onConfirm({ name: name.trim(), phone });
+    onConfirm({ name: name.trim(), email: email.trim(), phone });
   }
 
   return (
-    <>
-      <div>
-        <p className="sum-label">Sua reserva</p>
+    <div className="sum">
+      <header className="step-head">
+        <span className="step-n">05</span>
+        <h3>Seus dados</h3>
+      </header>
+      <div className="recap">
         <p className="sum-line">
-          {svc.name}, {dur} min<br />
+          {SERVICE}, {dur} min<br />
           <Swap k={start == null ? "none" : `${dayKey(day)}-${start}`}>
             {start != null
               ? <span>{dayTxt}, {fmt(hoursOf(day), start)}</span>
               : <span className="dim">escolha um horário</span>}
           </Swap>
         </p>
-        <p className="sum-meta">
-          <span>{therapist ? `com ${nameOf(therapist)}` : "terapeuta disponível"}</span>
-          <span>pagamento no local</span>
-        </p>
+        <p className="sum-meta">{therapist ? `com ${nameOf(therapist)}` : "terapeuta disponível no horário"}</p>
       </div>
       <form className="form" onSubmit={submit} noValidate>
         <label className="field" htmlFor="f-name">Nome
           <input id="f-name" autoComplete="name" value={name} onChange={e => setName(e.target.value)} />
         </label>
+        <label className="field" htmlFor="f-email">E-mail
+          <input id="f-email" type="email" inputMode="email" autoComplete="email" placeholder="nome@empresa.com.br"
+            value={email} onChange={e => setEmail(e.target.value)} />
+        </label>
         <label className="field" htmlFor="f-phone">WhatsApp
           <input id="f-phone" type="tel" inputMode="tel" autoComplete="tel" placeholder="(11) 90000-0000"
             value={phone} onChange={e => setPhone(e.target.value)} />
         </label>
-        <motion.button className="cta" type="submit" disabled={start == null} whileTap={{ scale: 0.97 }}>
-          Confirmar <span className="total">{brl(price(svc, dur))}</span>
-        </motion.button>
         <AnimatePresence>
           {err && <motion.p key={err} className="err" role="alert" {...FADE}>{err}</motion.p>}
         </AnimatePresence>
+        <motion.button className="cta" type="submit" disabled={start == null} whileTap={{ scale: 0.97 }}>
+          Confirmar reserva
+        </motion.button>
       </form>
-    </>
+    </div>
   );
 }
 
 function Done({ booking, onAgain }) {
   return (
     <div className="done">
-      <div>
-        <span className="badge">RESERVA {booking.code}</span>
-        <p className="sum-line">Até {booking.when}, {booking.name.split(" ")[0]}.</p>
-        <p className="sum-meta"><span>{booking.what}</span><span>com {booking.ther}</span></p>
-        <p className="hint">Chegue 10 minutos antes. Para remarcar, responda à mensagem de confirmação.</p>
-      </div>
+      <span className="badge">RESERVA {booking.code}</span>
+      <p className="sum-line">Até {booking.when}, {booking.name.split(" ")[0]}.</p>
+      <p className="sum-meta">{booking.what} · com {booking.ther}</p>
+      <p className="hint">A confirmação vai para {booking.email}. Chegue 10 minutos antes.</p>
       <button className="ghost-btn" onClick={onAgain}>Fazer outra reserva</button>
     </div>
   );

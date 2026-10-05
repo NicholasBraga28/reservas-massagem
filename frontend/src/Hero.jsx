@@ -6,7 +6,7 @@ import ThemeSwitch from "./ThemeSwitch.jsx";
 // Diamond.jsx (diamante 3D lapidado) está guardado para uso futuro; não aparece no hero no momento.
 
 const EASE = [0.16, 1, 0.3, 1];
-const LINKS = [["#tratamentos", "Tratamentos"], ["#horarios", "Horários"], ["#terapeutas", "Terapeutas"]];
+const LINKS = [["#terapeutas", "Terapeutas"], ["#horarios", "Horários"], ["#dados", "Seus dados"]];
 
 // Barra fixa no topo do site inteiro, com contorno sólido que segue o tema.
 export function Navbar() {

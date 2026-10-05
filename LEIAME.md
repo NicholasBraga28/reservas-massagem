@@ -10,7 +10,7 @@ Aplicação de reservas de massagens para a empresa.
   - `src/three-canvas.js` — base comum das cenas 3D (three carregado sob demanda, pausa fora da tela, reduzir movimento)
   - `src/App.jsx` — agenda e componentes do agendamento (animações com Motion)
   - `src/index.css` — Tailwind e fontes
-  - `src/agenda.js` — serviços, preços, horários e regras de disponibilidade (vira API no backend)
+  - `src/agenda.js` — serviço, durações, terapeutas, horários e regras de disponibilidade (vira API no backend)
   - `src/agenda.check.js` — checagem das regras (`npm run check`)
   - `src/styles.css` — tokens de cor/tipo de todos os temas e estilos da barra, do hero e da agenda (camada `components` do Tailwind)
 - Backend: a definir.

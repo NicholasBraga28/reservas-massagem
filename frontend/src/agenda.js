@@ -1,26 +1,18 @@
 // Dados de exemplo e regras da agenda. Tudo aqui vira resposta do backend depois.
-export const SERVICES = [
-  { id: "relax",   name: "Relaxante",          desc: "Pressão leve, ritmo lento, óleo morno",    base: 170 },
-  { id: "sport",   name: "Desportiva",         desc: "Pressão firme, foco em grupos musculares", base: 190 },
-  { id: "shiatsu", name: "Shiatsu",            desc: "Pressão por pontos, sem óleo, de roupa",   base: 180 },
-  { id: "stones",  name: "Pedras quentes",     desc: "Basalto aquecido a cerca de 50 °C",        base: 220, min: 60 },
-  { id: "lymph",   name: "Drenagem linfática", desc: "Movimentos leves e ritmados",              base: 180 },
-];
+// Serviço único, oferecido pela empresa; o site não mostra preço.
+export const SERVICE = "Massagem clássica";
 export const DURATIONS = [30, 60, 90];
 export const THERAPISTS = [
   { id: "any", name: "Sem preferência" },
   { id: "ana", name: "Ana" }, { id: "bruno", name: "Bruno" }, { id: "carla", name: "Carla" },
 ];
 export const STEP = 30; // minutos por slot
-const PRICE_FACTOR = { 30: 0.6, 60: 1, 90: 1.4 };
 const HOURS = { weekday: [9, 20], sat: [9, 14] }; // domingo fechado
 
 export const range = n => Array.from({ length: n }, (_, i) => i);
 export const dayKey = d => d.toLocaleDateString("sv"); // AAAA-MM-DD no fuso local
 export const hoursOf = d => (d.getDay() === 0 ? null : d.getDay() === 6 ? HOURS.sat : HOURS.weekday);
 export const slotCount = h => ((h[1] - h[0]) * 60) / STEP;
-export const price = (svc, dur) => svc.base * PRICE_FACTOR[dur];
-export const brl = n => n.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
 export const fmt = (h, i) => {
   const m = h[0] * 60 + i * STEP;
   return `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;

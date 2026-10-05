@@ -1,6 +1,6 @@
 /* Agenda (abaixo do hero). Fica na camada "components" do Tailwind: vence o preflight e perde para os utilitários.
-   Layout: cabeçalho com título serifado + tema; cartão de reserva sobre manchas lilás com três colunas em telas largas:
-   "o quê" (tratamento, duração, terapeuta) | "quando" (dias, barra, horários) | resumo fixo ao rolar. */
+   Layout: cabeçalho com título serifado; reserva larga e sem bordas, em etapas numeradas
+   (duração, terapeuta, dia, horário) + painel "Seus dados" fixo ao rolar. */
 @layer components {
 :root {
   --canvas: #F8F7FC;
@@ -18,8 +18,9 @@
   --input: #F5F2FF;
   --warn: #B4233C;
   --day-ring: transparent;
+  --panel-line: transparent; /* painel de dados sem borda; só o alto contraste desenha uma */
   --shadow: 90 23 154;   /* sombra tingida de roxo */
-  --blob: .55;
+ 
   --bw: 1px;
   /* hero, barra e logo 3D (mesmos temas da agenda) */
   --hero-bg: #EFEAFC; --hero-ink: #2A0E4A; --hero-muted: #5F4F7E; --hero-line: #A07BF6;
@@ -36,7 +37,7 @@
   :root:not([data-theme="light"]):not([data-theme="contrast"]) {
     --canvas: #110A1C; --card: #1B1229; --ink: #F4F0FF; --slate: #B8AAD6; --mist: #6E6188; --hair: #2F2345;
     --primary: #A07BF6; --on-primary: #160A26; --lilac: #A07BF6; --lavender: #4B3870; --soft: #2C1F47; --soft-ink: #DED6FF;
-    --input: #150D22; --warn: #FF8FA3; --shadow: 0 0 0; --blob: .28;
+    --input: #150D22; --warn: #FF8FA3; --shadow: 0 0 0;
     --hero-bg: #07040C; --hero-ink: #FFFFFF; --hero-muted: #C9BEE3; --hero-line: #6E58A0;
     --nav-bg: rgb(17 10 28 / .65); --hero-glow: rgb(160 123 246 / .3); --hero-shield: rgb(7 4 12 / .75);
     --logo-front: #CBBAFF; --logo-front-glow: #A07BF6; --logo-back: #7A46D8; --logo-back-glow: #5A179A; --logo-opacity: .5;
@@ -46,7 +47,7 @@
 :root[data-theme="dark"] {
   --canvas: #110A1C; --card: #1B1229; --ink: #F4F0FF; --slate: #B8AAD6; --mist: #6E6188; --hair: #2F2345;
   --primary: #A07BF6; --on-primary: #160A26; --lilac: #A07BF6; --lavender: #4B3870; --soft: #2C1F47; --soft-ink: #DED6FF;
-  --input: #150D22; --warn: #FF8FA3; --shadow: 0 0 0; --blob: .28;
+  --input: #150D22; --warn: #FF8FA3; --shadow: 0 0 0;
     --hero-bg: #07040C; --hero-ink: #FFFFFF; --hero-muted: #C9BEE3; --hero-line: #6E58A0;
     --nav-bg: rgb(17 10 28 / .65); --hero-glow: rgb(160 123 246 / .3); --hero-shield: rgb(7 4 12 / .75);
     --logo-front: #CBBAFF; --logo-front-glow: #A07BF6; --logo-back: #7A46D8; --logo-back-glow: #5A179A; --logo-opacity: .5;
@@ -56,7 +57,7 @@
   :root:not([data-theme]) {
     --canvas: #000; --card: #000; --ink: #FFF; --slate: #FFF; --mist: #9A9A9A; --hair: #FFF;
     --primary: #CBBAFF; --on-primary: #000; --lilac: #CBBAFF; --lavender: #FFF; --soft: #000; --soft-ink: #FFF;
-    --input: #000; --warn: #FF9C9C; --day-ring: #FFF; --shadow: 0 0 0; --blob: 0; --bw: 2px;
+    --input: #000; --warn: #FF9C9C; --day-ring: #FFF; --panel-line: #FFF; --shadow: 0 0 0; --bw: 2px;
     --hero-bg: #000; --hero-ink: #FFF; --hero-muted: #FFF; --hero-line: #FFF;
     --nav-bg: #000; --hero-glow: transparent; --hero-shield: rgb(0 0 0 / .9);
     --logo-front: #FFFFFF; --logo-front-glow: #FFFFFF; --logo-back: #CBBAFF; --logo-back-glow: #CBBAFF; --logo-opacity: .3;
@@ -66,7 +67,7 @@
 :root[data-theme="contrast"] {
   --canvas: #000; --card: #000; --ink: #FFF; --slate: #FFF; --mist: #9A9A9A; --hair: #FFF;
   --primary: #CBBAFF; --on-primary: #000; --lilac: #CBBAFF; --lavender: #FFF; --soft: #000; --soft-ink: #FFF;
-  --input: #000; --warn: #FF9C9C; --day-ring: #FFF; --shadow: 0 0 0; --blob: 0; --bw: 2px;
+  --input: #000; --warn: #FF9C9C; --day-ring: #FFF; --panel-line: #FFF; --shadow: 0 0 0; --bw: 2px;
     --hero-bg: #000; --hero-ink: #FFF; --hero-muted: #FFF; --hero-line: #FFF;
     --nav-bg: #000; --hero-glow: transparent; --hero-shield: rgb(0 0 0 / .9);
     --logo-front: #FFFFFF; --logo-front-glow: #FFFFFF; --logo-back: #CBBAFF; --logo-back-glow: #CBBAFF; --logo-opacity: .3;
@@ -79,11 +80,10 @@
 /* transição em degradê: a agenda começa na cor do hero e passa para a sua */
 .agenda {
   position: relative; background: linear-gradient(to bottom, var(--hero-bg), var(--canvas) 260px);
-  padding: 96px 16px 120px; overflow-x: clip; color: var(--ink); font-family: var(--font);
+  padding: 104px clamp(16px, 4vw, 64px) 128px; overflow-x: clip; color: var(--ink); font-family: var(--font);
 }
-.agenda-head, .stage { max-width: 1280px; margin-inline: auto; }
-.agenda-head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 24px; margin-bottom: 48px; }
-.agenda-head > div:first-child { display: grid; justify-items: start; gap: 14px; max-width: 640px; }
+.agenda-head, .stage { max-width: 1440px; margin-inline: auto; }
+.agenda-head { display: grid; justify-items: start; gap: 14px; margin-bottom: 64px; }
 .badge {
   padding: 6px 12px; border-radius: 999px; background: var(--soft); color: var(--soft-ink);
   border: var(--bw) solid var(--day-ring); font-size: 12px; font-weight: 600;
@@ -95,7 +95,7 @@
 .display em { color: var(--primary); }
 .display .word { display: inline-block; overflow: hidden; vertical-align: top; padding-bottom: .1em; margin-right: .22em; }
 .display .word > span { display: inline-block; }
-.lede { margin: 0; max-width: 520px; color: var(--slate); font-size: 17px; line-height: 1.55; }
+.lede { margin: 0; max-width: 620px; color: var(--slate); font-size: 17px; line-height: 1.55; }
 
 .txt { position: relative; }
 
@@ -165,79 +165,36 @@
   .theme-body { width: 28px; height: 28px; }
 }
 
-/* ——— cartão de reserva ——— */
-.stage { position: relative; }
-.blobs { position: absolute; inset: 0; pointer-events: none; }
-.blob { position: absolute; border-radius: 50%; filter: blur(64px); opacity: var(--blob); pointer-events: none; animation: drift 18s ease-in-out infinite alternate; }
-.b1 { width: 420px; height: 320px; top: -64px; left: -56px; background: var(--lilac); }
-.b2 { width: 480px; height: 360px; bottom: -72px; right: -64px; background: var(--lavender); animation-delay: -9s; }
-@keyframes drift { to { transform: translate(40px, 24px) scale(1.08); } }
-
-.booking {
-  position: relative; display: grid; grid-template-columns: minmax(0, 320px) minmax(0, 1fr) minmax(0, 330px);
-  background: var(--card); border: var(--bw) solid var(--hair); border-radius: 28px; box-shadow: var(--elev);
-}
-.panel { display: grid; grid-template-columns: minmax(0, 1fr); gap: 32px; align-content: start; padding: 32px; min-width: 0; }
-.left { border-right: var(--bw) solid var(--hair); }
-.right { border-right: var(--bw) solid var(--hair); }
-.step, #horarios { scroll-margin-top: 104px; } /* abaixo da barra fixa */
-
-.event { display: grid; gap: 6px; }
-.org { margin: 0; color: var(--slate); font-size: 13px; font-weight: 600; letter-spacing: .02em; }
-.event-title { margin: 0; font-family: var(--serif); font-size: 40px; font-weight: 400; line-height: 1.05; letter-spacing: -0.01em; }
-.facts { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 6px; color: var(--slate); font-weight: 500; font-size: 15px; font-variant-numeric: tabular-nums; }
-.facts li { display: flex; align-items: center; gap: 10px; }
-.facts li > span { display: inline-block; }
-.facts svg { width: 17px; height: 17px; flex: none; }
-
-.step { border: 0; margin: 0; padding: 0; min-width: 0; }
-.step legend, .label, .sum-label {
-  padding: 0; margin: 0 0 12px; font-size: 11.5px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--slate);
-}
-
-/* tratamentos: lista sanfona; descrição abre só no escolhido */
-.svc { display: grid; border-top: var(--bw) solid var(--hair); }
-.svc label {
-  display: grid; grid-template-columns: 18px minmax(0, 1fr) auto; column-gap: 12px; align-items: center;
-  padding: 12px 0; border-bottom: var(--bw) solid var(--hair); cursor: pointer;
-}
-.svc input {
-  appearance: none; width: 18px; height: 18px; margin: 0; border-radius: 50%;
-  border: 2px solid var(--slate); background: var(--card); transition: border-color .2s, box-shadow .2s;
-}
-.svc input:checked { border-color: var(--primary); box-shadow: inset 0 0 0 3px var(--card), inset 0 0 0 9px var(--primary); }
-.svc b { font-weight: 500; color: var(--slate); transition: color .2s; }
-.svc label:has(:checked) b, .svc label:hover b { color: var(--ink); }
-.svc label:has(:checked) b { font-weight: 600; }
-.svc em { display: block; overflow: hidden; grid-column: 2 / -1; font-style: normal; font-size: 14px; color: var(--slate); }
-.svc .price { font-size: 13px; color: var(--slate); white-space: nowrap; font-variant-numeric: tabular-nums; }
+/* ——— reserva: largo, sem cartão nem bordas; etapas numeradas + coluna de dados ——— */
+.booking { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 400px); gap: 48px clamp(40px, 5vw, 96px); align-items: start; }
+.flow { display: grid; gap: 56px; min-width: 0; }
+.options { display: flex; flex-wrap: wrap; gap: 40px 64px; }
+.step { min-width: 0; scroll-margin-top: 112px; } /* abaixo da barra fixa */
+.step-head { display: flex; align-items: baseline; gap: 12px; margin-bottom: 20px; }
+.step-n { font-size: 12px; font-weight: 600; letter-spacing: .08em; color: var(--primary); font-variant-numeric: tabular-nums; }
+.step-head h3 { margin: 0; font-size: 20px; font-weight: 600; letter-spacing: -0.01em; }
+.step-aside { margin-left: auto; color: var(--slate); font-size: 14px; font-weight: 500; text-align: right; }
+.step-aside::first-letter { text-transform: uppercase; }
 
 /* pílulas de escolha: o fundo da escolhida desliza */
 .chips { display: flex; flex-wrap: wrap; gap: 8px; }
 .chip { position: relative; }
 .chip input { position: absolute; inset: 0; z-index: 1; margin: 0; opacity: 0; cursor: pointer; }
 .chip-body {
-  position: relative; display: inline-flex; padding: 10px 14px; border-radius: 10px;
+  position: relative; display: inline-flex; padding: 10px 18px; border-radius: 10px;
   border: var(--bw) solid var(--lavender); background: var(--card); font-size: 15px; font-weight: 600;
   transition: color .2s, border-color .2s;
 }
-.chip-body .txt { display: inline-flex; align-items: baseline; gap: 8px; }
 .chip .pill { position: absolute; inset: calc(-1 * var(--bw)); border-radius: 10px; background: var(--primary); }
-.chip small { font-size: 13px; font-weight: 500; color: var(--slate); transition: color .2s; }
 .chip input:hover:not(:checked):not(:disabled) + .chip-body { border-color: var(--primary); }
 .chip input:checked + .chip-body { border-color: var(--primary); color: var(--on-primary); }
-.chip input:checked + .chip-body small { color: inherit; opacity: .85; }
 .chip input:disabled + .chip-body { color: var(--mist); border-style: dashed; }
 .chip input:disabled { cursor: not-allowed; }
 .chip input:focus-visible + .chip-body { outline: 2px solid var(--lilac); outline-offset: 2px; }
 
 /* ——— dias ——— */
-.when-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin-bottom: 16px; }
-.when-head h3 { margin: 0; font-family: var(--serif); font-size: 30px; font-weight: 400; line-height: 1.1; }
-.when-head > span { color: var(--slate); font-weight: 500; font-size: 14px; }
-.when-head .label { margin: 0; }
 .days {
-  display: grid; grid-auto-flow: column; grid-auto-columns: 56px; gap: 4px;
+  display: grid; grid-auto-flow: column; grid-auto-columns: minmax(56px, 1fr); gap: 4px;
   overflow-x: auto; scroll-snap-type: x mandatory; scroll-behavior: smooth; padding-bottom: 8px; scrollbar-width: thin;
 }
 .day { scroll-snap-align: start; display: grid; justify-items: center; gap: 6px; padding: 2px 0; border: 0; background: none; cursor: pointer; }
@@ -260,7 +217,7 @@
 .bar-wrap { display: grid; gap: 8px; }
 .bar {
   position: relative; height: 52px; overflow: hidden; cursor: crosshair;
-  border-radius: 12px; background: var(--input); border: var(--bw) solid var(--hair);
+  border-radius: 12px; background: var(--input); outline: var(--bw) solid var(--panel-line);
 }
 .bar .hr { position: absolute; top: 0; bottom: 0; border-left: 1px solid var(--hair); }
 .bar-layer { position: absolute; inset: 0; animation: fade-in .4s ease both; }
@@ -296,14 +253,19 @@
 .split .go { border: 0; background: var(--primary); color: var(--on-primary); cursor: pointer; box-shadow: var(--elev-btn); }
 .none { margin: 12px 0 0; color: var(--slate); font-size: 14px; }
 
-/* ——— resumo: coluna fixa ao rolar ——— */
-.summary { position: sticky; top: 24px; align-self: start; padding: 32px 28px; }
-.sum-inner { display: grid; grid-template-columns: minmax(0, 1fr); gap: 24px; }
-.sum-line { margin: 4px 0 0; font-family: var(--serif); font-size: 28px; font-weight: 400; line-height: 1.15; text-wrap: balance; }
+/* ——— seus dados: painel preenchido, sem borda, fixo ao rolar ——— */
+.summary {
+  position: sticky; top: 104px; scroll-margin-top: 112px;
+  padding: 32px; border-radius: 20px; background: var(--card); box-shadow: var(--elev);
+  outline: var(--bw) solid var(--panel-line);
+}
+.sum, .done { display: grid; gap: 24px; }
+.recap { display: grid; gap: 8px; padding-bottom: 4px; }
+.sum-line { margin: 0; font-family: var(--serif); font-size: 30px; font-weight: 400; line-height: 1.15; text-wrap: balance; }
 .sum-line > span { display: inline-block; }
 .sum-line .dim { color: var(--slate); }
-.sum-meta { display: flex; flex-wrap: wrap; gap: 4px 16px; margin: 8px 0 0; color: var(--slate); font-size: 14px; }
-.form { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; align-items: end; }
+.sum-meta { margin: 0; color: var(--slate); font-size: 14px; }
+.form { display: grid; gap: 14px; }
 .field { display: grid; gap: 6px; font-size: 13px; font-weight: 500; color: var(--slate); }
 .field input {
   height: 48px; padding: 0 14px; border-radius: 10px; font-size: 16px;
@@ -312,18 +274,16 @@
 .field input::placeholder { color: var(--mist); }
 .field input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 4px color-mix(in srgb, var(--lilac) 30%, transparent); }
 .cta {
-  height: 52px; display: inline-flex; align-items: center; justify-content: center; gap: 10px; padding: 0 22px;
+  margin-top: 6px; height: 52px; display: inline-flex; align-items: center; justify-content: center; padding: 0 22px;
   border: 0; border-radius: 999px; background: var(--primary); color: var(--on-primary); box-shadow: var(--elev-btn);
   font-size: 16px; font-weight: 600; white-space: nowrap; cursor: pointer; transition: filter .2s, background-color .3s;
 }
 .cta:hover:not(:disabled) { filter: brightness(1.12); }
 .cta:disabled { background: var(--input); color: var(--mist); border: var(--bw) solid var(--hair); box-shadow: none; cursor: not-allowed; }
-.cta .total { font-weight: 500; opacity: .85; font-variant-numeric: tabular-nums; }
-.err { grid-column: 1 / -1; margin: 0; color: var(--warn); font-size: 14px; font-weight: 500; }
+.err { margin: 0; color: var(--warn); font-size: 14px; font-weight: 500; }
 
-.done { display: grid; gap: 20px; }
-.done .badge { display: inline-block; margin-bottom: 10px; letter-spacing: .08em; }
-.hint { margin: 8px 0 0; color: var(--slate); font-size: 14px; }
+.done .badge { justify-self: start; letter-spacing: .08em; }
+.hint { margin: 0; color: var(--slate); font-size: 14px; }
 .ghost-btn {
   justify-self: start; height: 44px; padding: 0 18px; border-radius: 999px; cursor: pointer;
   border: var(--bw) solid var(--lavender); background: var(--card); color: var(--primary); font-weight: 600;
@@ -331,32 +291,23 @@
 .ghost-btn:hover { border-color: var(--primary); }
 
 /* ——— telas menores ——— */
-@media (max-width: 1180px) {
-  .booking { grid-template-columns: minmax(0, 340px) minmax(0, 1fr); }
-  .right { border-right: 0; }
-  .summary { grid-column: 1 / -1; position: static; padding: 24px 32px; border-top: var(--bw) solid var(--hair); }
-  .sum-inner { grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); gap: 16px 40px; align-items: center; }
-  .form { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
-  .cta { grid-column: 1 / -1; }
-  .done { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; }
+@media (max-width: 1100px) {
+  .booking { grid-template-columns: minmax(0, 1fr); }
+  .summary { position: static; max-width: 640px; }
 }
 @media (max-width: 900px) {
-  .agenda { padding-block: 64px 80px; }
-  .agenda-head { margin-bottom: 36px; }
-  .booking { grid-template-columns: minmax(0, 1fr); border-radius: 24px; }
-  .left { border-right: 0; border-bottom: var(--bw) solid var(--hair); }
-  .panel { padding: 24px 20px; }
-  .summary { padding: 20px; }
-  .sum-inner { grid-template-columns: minmax(0, 1fr); }
-  .b1 { width: 240px; height: 200px; left: -40px; }
-  .b2 { width: 260px; height: 220px; right: -40px; }
+  .agenda { padding-block: 80px 88px; }
+  .agenda-head { margin-bottom: 40px; }
+  .flow { gap: 44px; }
+  .summary { padding: 24px 20px; }
 }
 @media (max-width: 520px) {
-  .form { grid-template-columns: minmax(0, 1fr); }
   .period { grid-template-columns: minmax(0, 1fr); gap: 8px; }
   .period h4 { margin: 0; }
+  .step-head { flex-wrap: wrap; }
+  .step-aside { margin-left: 0; flex-basis: 100%; text-align: left; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .agenda *, .blob { transition: none !important; animation: none !important; }
+  .agenda * { transition: none !important; animation: none !important; }
 }
 }
