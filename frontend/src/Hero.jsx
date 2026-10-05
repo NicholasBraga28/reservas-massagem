@@ -90,7 +90,6 @@ export default function Hero({ next, onReserve }) {
 
   return (
     <header id="top" ref={ref} className="hero relative h-svh min-h-[620px] w-full flex flex-col overflow-hidden shrink-0">
-      <div className="hero-glow absolute inset-0 pointer-events-none" />
       {/* logo 3D na metade de baixo: entra e sai por degradês, com pouca opacidade para não competir com o texto */}
       <motion.div style={{ y: logoY }} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 1.4, delay: 0.4 }}
         className="hero-logo absolute inset-0 pointer-events-none">

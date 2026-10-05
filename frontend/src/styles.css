@@ -24,7 +24,7 @@
   --bw: 1px;
   /* hero, barra e logo 3D (mesmos temas da agenda) */
   --hero-bg: #EFEAFC; --hero-ink: #2A0E4A; --hero-muted: #5F4F7E; --hero-line: #A07BF6;
-  --nav-bg: rgb(255 255 255 / .75); --hero-glow: rgb(160 123 246 / .3); --hero-shield: rgb(239 234 252 / .85);
+  --nav-bg: rgb(255 255 255 / .75); --hero-shield: rgb(239 234 252 / .85);
   --logo-front: #5A179A; --logo-front-glow: #2A0E4A; --logo-back: #A07BF6; --logo-back-glow: #5A179A; --logo-opacity: .4;
 
   --font: "Inter", "Segoe UI", system-ui, sans-serif;
@@ -39,7 +39,7 @@
     --primary: #A07BF6; --on-primary: #160A26; --lilac: #A07BF6; --lavender: #4B3870; --soft: #2C1F47; --soft-ink: #DED6FF;
     --input: #150D22; --warn: #FF8FA3; --shadow: 0 0 0;
     --hero-bg: #07040C; --hero-ink: #FFFFFF; --hero-muted: #C9BEE3; --hero-line: #6E58A0;
-    --nav-bg: rgb(17 10 28 / .65); --hero-glow: rgb(160 123 246 / .3); --hero-shield: rgb(7 4 12 / .75);
+    --nav-bg: rgb(17 10 28 / .65); --hero-shield: rgb(7 4 12 / .75);
     --logo-front: #CBBAFF; --logo-front-glow: #A07BF6; --logo-back: #7A46D8; --logo-back-glow: #5A179A; --logo-opacity: .5;
     color-scheme: dark;
   }
@@ -49,7 +49,7 @@
   --primary: #A07BF6; --on-primary: #160A26; --lilac: #A07BF6; --lavender: #4B3870; --soft: #2C1F47; --soft-ink: #DED6FF;
   --input: #150D22; --warn: #FF8FA3; --shadow: 0 0 0;
     --hero-bg: #07040C; --hero-ink: #FFFFFF; --hero-muted: #C9BEE3; --hero-line: #6E58A0;
-    --nav-bg: rgb(17 10 28 / .65); --hero-glow: rgb(160 123 246 / .3); --hero-shield: rgb(7 4 12 / .75);
+    --nav-bg: rgb(17 10 28 / .65); --hero-shield: rgb(7 4 12 / .75);
     --logo-front: #CBBAFF; --logo-front-glow: #A07BF6; --logo-back: #7A46D8; --logo-back-glow: #5A179A; --logo-opacity: .5;
   color-scheme: dark;
 }
@@ -59,7 +59,7 @@
     --primary: #CBBAFF; --on-primary: #000; --lilac: #CBBAFF; --lavender: #FFF; --soft: #000; --soft-ink: #FFF;
     --input: #000; --warn: #FF9C9C; --day-ring: #FFF; --panel-line: #FFF; --shadow: 0 0 0; --bw: 2px;
     --hero-bg: #000; --hero-ink: #FFF; --hero-muted: #FFF; --hero-line: #FFF;
-    --nav-bg: #000; --hero-glow: transparent; --hero-shield: rgb(0 0 0 / .9);
+    --nav-bg: #000; --hero-shield: rgb(0 0 0 / .9);
     --logo-front: #FFFFFF; --logo-front-glow: #FFFFFF; --logo-back: #CBBAFF; --logo-back-glow: #CBBAFF; --logo-opacity: .3;
     color-scheme: dark;
   }
@@ -69,7 +69,7 @@
   --primary: #CBBAFF; --on-primary: #000; --lilac: #CBBAFF; --lavender: #FFF; --soft: #000; --soft-ink: #FFF;
   --input: #000; --warn: #FF9C9C; --day-ring: #FFF; --panel-line: #FFF; --shadow: 0 0 0; --bw: 2px;
     --hero-bg: #000; --hero-ink: #FFF; --hero-muted: #FFF; --hero-line: #FFF;
-    --nav-bg: #000; --hero-glow: transparent; --hero-shield: rgb(0 0 0 / .9);
+    --nav-bg: #000; --hero-shield: rgb(0 0 0 / .9);
     --logo-front: #FFFFFF; --logo-front-glow: #FFFFFF; --logo-back: #CBBAFF; --logo-back-glow: #CBBAFF; --logo-opacity: .3;
   color-scheme: dark;
 }
@@ -131,7 +131,6 @@
 /* ——— hero ——— */
 .hero { background: var(--hero-bg); color: var(--hero-ink); transition: background-color .4s, color .4s; }
 .hero ::selection { background: var(--hero-ink); color: var(--hero-bg); }
-.hero-glow { background: radial-gradient(ellipse 70% 55% at 50% 45%, var(--hero-glow), transparent 70%); }
 .hero-logo {
   -webkit-mask-image: linear-gradient(to bottom, transparent 30%, #000 52%, #000 80%, transparent 100%);
   mask-image: linear-gradient(to bottom, transparent 30%, #000 52%, #000 80%, transparent 100%);
