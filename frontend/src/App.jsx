@@ -1,5 +1,7 @@
 import { useCallback, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence, MotionConfig, useScroll, useTransform, useReducedMotion } from "motion/react";
+import { RadioGroup, Radio, Button, Form, TextField, Label, Input, FieldError, I18nProvider } from "react-aria-components";
+import { ArrowDown } from "lucide-react";
 import Hero, { Navbar } from "./Hero.jsx";
 import {
   SERVICE, DURATIONS, THERAPISTS, STEP, range, dayKey, hoursOf, slotCount,
@@ -66,7 +68,7 @@ export default function App() {
     document.getElementById("agenda")?.scrollIntoView({ behavior: "smooth" });
   }, []);
 
-  function chooseDay(d) { setPickedDay(d); setPickedStart(null); }
+  function chooseDay(key) { setPickedDay(DAYS.find(d => dayKey(d) === key)); setPickedStart(null); }
   function goToForm() {
     const f = document.getElementById("f-name");
     f?.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -86,6 +88,7 @@ export default function App() {
   }
 
   return (
+    <I18nProvider locale="pt-BR">
     <MotionConfig reducedMotion="user">
       <Navbar />
       <Hero next={next} onReserve={reserveFromHero} />
@@ -109,18 +112,16 @@ export default function App() {
             <div className="flow">
               <div className="options">
                 <Step n="01" title="Duração" id="duracao">
-                  <div className="chips" role="radiogroup" aria-labelledby="duracao-t">
-                    {DURATIONS.map(v => (
-                      <Chip key={v} group="dur" checked={v === dur} onChange={() => setDur(v)}>{v} min</Chip>
-                    ))}
-                  </div>
+                  <RadioGroup className="chips" aria-labelledby="duracao-t" orientation="horizontal"
+                    value={String(dur)} onChange={v => setDur(Number(v))}>
+                    {DURATIONS.map(v => <Chip key={v} group="dur" value={String(v)}>{v} min</Chip>)}
+                  </RadioGroup>
                 </Step>
                 <Step n="02" title="Terapeuta" id="terapeutas">
-                  <div className="chips" role="radiogroup" aria-labelledby="terapeutas-t">
-                    {THERAPISTS.map(t => (
-                      <Chip key={t.id} group="ther" checked={t.id === ther} onChange={() => setTher(t.id)}>{t.name}</Chip>
-                    ))}
-                  </div>
+                  <RadioGroup className="chips" aria-labelledby="terapeutas-t" orientation="horizontal"
+                    value={ther} onChange={setTher}>
+                    {THERAPISTS.map(t => <Chip key={t.id} group="ther" value={t.id}>{t.name}</Chip>)}
+                  </RadioGroup>
                 </Step>
               </div>
 
@@ -131,11 +132,20 @@ export default function App() {
               <Step n="04" title="Horário" id="horario" aside={`${date(day, { weekday: "long", day: "numeric" })} · ${hoursOf(day)[0]}h às ${hoursOf(day)[1]}h`}>
                 <div className="bar-wrap">
                   <DayBar day={day} n={n} ther={ther} start={start} onPick={setPickedStart} />
-                  <div className="legend">
+                  <div className="legend" aria-hidden="true">
                     <span><i className="l-busy" />Ocupado</span><span><i className="l-sel" />Sua sessão</span>
                   </div>
                 </div>
-                <Slots key={`${dayKey(day)}-${n}-${ther}`} day={day} free={free} start={start} onPick={setPickedStart} onGo={goToForm} />
+                <Slots key={`${dayKey(day)}-${n}-${ther}`} day={day} free={free} start={start} onPick={setPickedStart} />
+                <AnimatePresence>
+                  {start != null && !done && (
+                    <motion.div key="to-form" className="to-form" {...FADE}>
+                      <Button className="ghost-btn" onPress={goToForm}>
+                        Seguir para seus dados <ArrowDown className="w-4 h-4" aria-hidden="true" />
+                      </Button>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </Step>
             </div>
 
@@ -156,6 +166,7 @@ export default function App() {
         </div>
       </main>
     </MotionConfig>
+    </I18nProvider>
   );
 }
 
@@ -164,7 +175,7 @@ function Step({ n, title, id, aside, children }) {
   return (
     <section className="step" id={id} aria-labelledby={`${id}-t`}>
       <header className="step-head">
-        <span className="step-n">{n}</span>
+        <span className="step-n" aria-hidden="true">{n}</span>
         <h3 id={`${id}-t`}>{title}</h3>
         {aside && <span className="step-aside">{aside}</span>}
       </header>
@@ -184,41 +195,46 @@ function Swap({ k, children }) {
   );
 }
 
-// Opção em pílula; o fundo da escolhida desliza entre as opções (layoutId).
-function Chip({ group, checked, onChange, children }) {
+// Opção em pílula (Radio do React Aria); o fundo da escolhida desliza entre as opções (layoutId).
+function Chip({ group, value, children }) {
   return (
-    <label className="chip">
-      <input type="radio" name={group} checked={checked} onChange={onChange} />
-      <span className="chip-body">
-        {checked && <motion.span layoutId={`pill-${group}`} className="pill" transition={SPRING} />}
-        <span className="txt">{children}</span>
-      </span>
-    </label>
+    <Radio value={value} className="chip">
+      {({ isSelected }) => (
+        <span className="chip-body">
+          {isSelected && <motion.span layoutId={`pill-${group}`} className="pill" transition={SPRING} />}
+          <span className="txt">{children}</span>
+        </span>
+      )}
+    </Radio>
   );
 }
 
 function DayStrip({ day, counts, onPick }) {
   return (
-    <div className="days">
+    <RadioGroup className="days" aria-labelledby="horarios-t" orientation="horizontal" value={dayKey(day)} onChange={onPick}>
       {DAYS.map((d, k) => {
         const c = counts[k];
         return (
-          <button key={k} className="day" aria-pressed={d === day} disabled={!c} onClick={() => onPick(d)}
-            aria-label={`${date(d, { weekday: "long", day: "numeric", month: "long" })}, ${c ? `${c} horários` : "sem horários"}`}>
-            <span className="wd">{date(d, { weekday: "short" }).replace(".", "")}</span>
-            <span className="dn">
-              {d === day && <motion.span layoutId="pill-day" className="pill" transition={SPRING} />}
-              <span className="txt">{d.getDate()}</span>
-            </span>
-            <span className="av">{!hoursOf(d) ? "fechado" : c ? `${c} livres` : "lotado"}</span>
-          </button>
+          <Radio key={k} value={dayKey(d)} isDisabled={!c} className="day"
+            aria-label={`${date(d, { weekday: "long", day: "numeric", month: "long" })}, ${c ? `${c} horários livres` : "sem horários"}`}>
+            {({ isSelected }) => (
+              <>
+                <span className="wd">{date(d, { weekday: "short" }).replace(".", "")}</span>
+                <span className="dn">
+                  {isSelected && <motion.span layoutId="pill-day" className="pill" transition={SPRING} />}
+                  <span className="txt">{d.getDate()}</span>
+                </span>
+                <span className="av">{!hoursOf(d) ? "fechado" : c ? `${c} livres` : "lotado"}</span>
+              </>
+            )}
+          </Radio>
         );
       })}
-    </div>
+    </RadioGroup>
   );
 }
 
-// Barra do dia: passar o mouse mostra a sessão "fantasma", clicar escolhe. Os botões de Slots são o caminho acessível.
+// Barra do dia: passar o mouse mostra a sessão "fantasma", clicar escolhe. Os horários (Slots) são o caminho acessível.
 function DayBar({ day, n, ther, start, onPick }) {
   const [hover, setHover] = useState(null);
   const h = hoursOf(day), N = slotCount(h), span = h[1] - h[0];
@@ -267,8 +283,8 @@ function DayBar({ day, n, ther, start, onPick }) {
 const LIST = { hidden: {}, show: { transition: { staggerChildren: 0.015 } } };
 const ITEM = { hidden: { opacity: 0, y: 8 }, show: { opacity: 1, y: 0, transition: { duration: 0.35, ease: EASE } } };
 
-// Horários entram em cascata. O escolhido vira dois botões: a hora e "Seguir", que leva ao formulário.
-function Slots({ day, free, start, onPick, onGo }) {
+// Horários do dia: um único grupo de rádio (setas do teclado navegam entre todos), separado em manhã/tarde/noite.
+function Slots({ day, free, start, onPick }) {
   const h = hoursOf(day), min = i => h[0] * 60 + i * STEP;
   const groups = [
     ["Manhã", i => min(i) < 720],
@@ -276,51 +292,52 @@ function Slots({ day, free, start, onPick, onGo }) {
     ["Noite", i => min(i) >= 1020],
   ];
   return (
-    <motion.div className="periods" variants={LIST} initial="hidden" animate="show">
-      {groups.map(([name, f]) => {
-        const g = free.filter(f);
-        if (!g.length && name === "Noite") return null;
-        return (
-          <div className="period" key={name}>
-            <h4>{name}</h4>
-            {g.length
-              ? <div className="slots">{g.map(i => i === start
-                  ? <motion.div key={i} layout="position" className="split" variants={ITEM}
-                      initial={{ opacity: 0, scale: 0.94 }} animate={{ opacity: 1, scale: 1 }} transition={SPRING}>
-                      <span className="t" aria-current="true">{fmt(h, i)}</span>
-                      <button className="go" onClick={onGo}>Seguir</button>
+    <RadioGroup aria-labelledby="horario-t" value={start == null ? null : String(start)} onChange={v => onPick(Number(v))}>
+      <motion.div className="periods" variants={LIST} initial="hidden" animate="show">
+        {groups.map(([name, f]) => {
+          const g = free.filter(f);
+          if (!g.length && name === "Noite") return null;
+          return (
+            <div className="period" key={name}>
+              <h4 aria-hidden="true">{name}</h4>
+              {g.length
+                ? <div className="slots">{g.map(i => (
+                    <motion.div key={i} variants={ITEM}>
+                      <Radio value={String(i)} className="slot" aria-label={`${name}, ${fmt(h, i)}`}>
+                        {({ isSelected }) => (
+                          <>
+                            {isSelected && <motion.span layoutId="pill-slot" className="pill" transition={SPRING} />}
+                            <span className="txt">{fmt(h, i)}</span>
+                          </>
+                        )}
+                      </Radio>
                     </motion.div>
-                  : <motion.button key={i} layout="position" variants={ITEM} className="slot" onClick={() => onPick(i)}>
-                      {fmt(h, i)}
-                    </motion.button>)}</div>
-              : <motion.p variants={ITEM} className="none">Nenhum horário livre.</motion.p>}
-          </div>
-        );
-      })}
-    </motion.div>
+                  ))}</div>
+                : <motion.p variants={ITEM} className="none">Nenhum horário livre.</motion.p>}
+            </div>
+          );
+        })}
+      </motion.div>
+    </RadioGroup>
   );
 }
 
+// Formulário com validação do React Aria: cada campo mostra o próprio erro e o primeiro inválido recebe o foco.
 function Summary({ dur, day, start, therapist, onConfirm }) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
-  const [err, setErr] = useState("");
   const dayTxt = date(day, { weekday: "long", day: "numeric", month: "short" });
 
   function submit(e) {
     e.preventDefault();
-    if (!name.trim()) return setErr("Informe seu nome.");
-    if (!EMAIL.test(email.trim())) return setErr("Informe um e-mail válido, ex.: nome@empresa.com.br.");
-    if (phone.replace(/\D/g, "").length < 10) return setErr("Informe o WhatsApp com DDD, ex.: (11) 91234-5678.");
-    setErr("");
     onConfirm({ name: name.trim(), email: email.trim(), phone });
   }
 
   return (
     <div className="sum">
       <header className="step-head">
-        <span className="step-n">05</span>
+        <span className="step-n" aria-hidden="true">05</span>
         <h3>Seus dados</h3>
       </header>
       <div className="recap">
@@ -334,25 +351,29 @@ function Summary({ dur, day, start, therapist, onConfirm }) {
         </p>
         <p className="sum-meta">{therapist ? `com ${nameOf(therapist)}` : "terapeuta disponível no horário"}</p>
       </div>
-      <form className="form" onSubmit={submit} noValidate>
-        <label className="field" htmlFor="f-name">Nome
-          <input id="f-name" autoComplete="name" value={name} onChange={e => setName(e.target.value)} />
-        </label>
-        <label className="field" htmlFor="f-email">E-mail
-          <input id="f-email" type="email" inputMode="email" autoComplete="email" placeholder="nome@empresa.com.br"
-            value={email} onChange={e => setEmail(e.target.value)} />
-        </label>
-        <label className="field" htmlFor="f-phone">WhatsApp
-          <input id="f-phone" type="tel" inputMode="tel" autoComplete="tel" placeholder="(11) 90000-0000"
-            value={phone} onChange={e => setPhone(e.target.value)} />
-        </label>
-        <AnimatePresence>
-          {err && <motion.p key={err} className="err" role="alert" {...FADE}>{err}</motion.p>}
-        </AnimatePresence>
-        <motion.button className="cta" type="submit" disabled={start == null} whileTap={{ scale: 0.97 }}>
-          Confirmar reserva
-        </motion.button>
-      </form>
+      <Form className="form" onSubmit={submit}>
+        <TextField className="field" id="f-name" name="name" isRequired autoComplete="name" value={name} onChange={setName}
+          validate={v => (v.trim() ? null : "Informe seu nome.")}>
+          <Label>Nome</Label>
+          <Input />
+          <FieldError className="field-error" />
+        </TextField>
+        <TextField className="field" name="email" type="email" isRequired autoComplete="email" value={email} onChange={setEmail}
+          validate={v => (EMAIL.test(v.trim()) ? null : "Informe um e-mail válido, ex.: nome@empresa.com.br.")}>
+          <Label>E-mail</Label>
+          <Input inputMode="email" placeholder="nome@empresa.com.br" />
+          <FieldError className="field-error" />
+        </TextField>
+        <TextField className="field" name="phone" type="tel" isRequired autoComplete="tel" value={phone} onChange={setPhone}
+          validate={v => (v.replace(/\D/g, "").length >= 10 ? null : "Informe o WhatsApp com DDD, ex.: (11) 91234-5678.")}>
+          <Label>WhatsApp</Label>
+          <Input inputMode="tel" placeholder="(11) 90000-0000" />
+          <FieldError className="field-error" />
+        </TextField>
+        <Button className="cta" type="submit" isDisabled={start == null}>
+          {start == null ? "Escolha um horário para confirmar" : "Confirmar reserva"}
+        </Button>
+      </Form>
     </div>
   );
 }
@@ -364,7 +385,7 @@ function Done({ booking, onAgain }) {
       <p className="sum-line">Até {booking.when}, {booking.name.split(" ")[0]}.</p>
       <p className="sum-meta">{booking.what} · com {booking.ther}</p>
       <p className="hint">A confirmação vai para {booking.email}. Chegue 10 minutos antes.</p>
-      <button className="ghost-btn" onClick={onAgain}>Fazer outra reserva</button>
+      <Button className="ghost-btn" onPress={onAgain}>Fazer outra reserva</Button>
     </div>
   );
 }

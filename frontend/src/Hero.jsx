@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence, useScroll, useTransform } from "motion/react";
+import { Button } from "react-aria-components";
 import { Flower2, ArrowRight, Check, ChevronDown } from "lucide-react";
 import LogoWire from "./LogoWire.jsx";
 import ThemeSwitch from "./ThemeSwitch.jsx";
@@ -64,17 +65,19 @@ function NextSlotCta({ next, onReserve }) {
   return (
     <AnimatePresence mode="wait">
       {mode === "button" ? (
-        <motion.button key="button" {...pop} onClick={() => (next ? setMode("open") : onReserve(null))} className="hero-btn">
-          Reservar uma sessão
-        </motion.button>
+        <motion.div key="button" {...pop}>
+          <Button onPress={() => (next ? setMode("open") : onReserve(null))} className="hero-btn">
+            Reservar uma sessão
+          </Button>
+        </motion.div>
       ) : (
         <motion.form key="form" {...pop} onSubmit={e => { e.preventDefault(); if (mode === "open") setMode("done"); }} className="hero-pill">
           <span aria-live="polite" className="flex-1 min-w-0 text-left truncate">
             {typed}<span className="animate-pulse opacity-60">|</span>
           </span>
-          <button type="submit" autoFocus aria-label="Reservar este horário" className="hero-go">
-            {mode === "done" ? <Check className="w-4 h-4" /> : <ArrowRight className="w-4 h-4" />}
-          </button>
+          <Button type="submit" autoFocus aria-label="Reservar este horário" className="hero-go">
+            {mode === "done" ? <Check className="w-4 h-4" aria-hidden="true" /> : <ArrowRight className="w-4 h-4" aria-hidden="true" />}
+          </Button>
         </motion.form>
       )}
     </AnimatePresence>
