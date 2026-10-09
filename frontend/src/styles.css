@@ -194,7 +194,8 @@
   display: grid; grid-auto-flow: column; grid-auto-columns: minmax(56px, 1fr); gap: 4px;
   overflow-x: auto; scroll-snap-type: x mandatory; scroll-behavior: smooth; padding-bottom: 8px; scrollbar-width: thin;
 }
-.day { scroll-snap-align: start; display: grid; justify-items: center; gap: 6px; padding: 2px 0; cursor: pointer; outline: none; }
+.days > div { display: grid; scroll-snap-align: start; }
+.day { display: grid; justify-items: center; gap: 6px; padding: 2px 0; cursor: pointer; outline: none; }
 .day .wd { font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--slate); }
 .day .dn {
   position: relative; width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center;

@@ -1,5 +1,5 @@
-import { useCallback, useMemo, useRef, useState } from "react";
-import { motion, AnimatePresence, MotionConfig, useScroll, useTransform, useReducedMotion } from "motion/react";
+import { useCallback, useMemo, useState } from "react";
+import { motion, AnimatePresence, MotionConfig } from "motion/react";
 import { RadioGroup, Radio, Button, Form, TextField, Label, Input, FieldError, I18nProvider } from "react-aria-components";
 import { ArrowDown } from "lucide-react";
 import Hero, { Navbar } from "./Hero.jsx";
@@ -16,6 +16,9 @@ const FADE = { initial: { opacity: 0, y: 10 }, animate: { opacity: 1, y: 0 }, ex
 const TITLE = [["Escolha"], ["o"], ["seu"], ["momento", true]];
 const WORDS = { show: { transition: { staggerChildren: 0.09 } } };
 const WORD = { hidden: { y: "110%" }, show: { y: 0, transition: { duration: 0.9, ease: EASE } } };
+// Esmaecer ao rolar: cada bloco aparece (e sobe um pouco) quando entra na tela, uma vez só.
+const REVEAL = { initial: { opacity: 0, y: 32 }, whileInView: { opacity: 1, y: 0 }, viewport: { once: true, amount: 0.2 } };
+const revealIn = (delay = 0) => ({ ...REVEAL, transition: { duration: 0.9, ease: EASE, delay } });
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const nameOf = id => THERAPISTS.find(t => t.id === id).name;
 const date = (d, opts) => d.toLocaleDateString("pt-BR", opts);
@@ -33,15 +36,6 @@ export default function App() {
   const [pickedDay, setPickedDay] = useState(null);
   const [pickedStart, setPickedStart] = useState(null);
   const [done, setDone] = useState(null);
-
-  // Entrada da agenda ligada à rolagem: o conteúdo sobe, endireita e cresce enquanto entra na tela.
-  const stageRef = useRef(null);
-  const reduceMotion = useReducedMotion();
-  const { scrollYProgress: enter } = useScroll({ target: stageRef, offset: ["start end", "start 0.25"] });
-  const cardY = useTransform(enter, [0, 1], [160, 0]);
-  const cardScale = useTransform(enter, [0, 1], [0.9, 1]);
-  const cardTilt = useTransform(enter, [0, 1], [12, 0]);
-  const cardOpacity = useTransform(enter, [0, 0.55], [0, 1]);
 
   const n = dur / STEP;
   const counts = useMemo(() => DAYS.map(d => starts(d, n, ther).length), [n, ther]);
@@ -106,9 +100,8 @@ export default function App() {
           <p className="lede">{SERVICE}. Escolha a duração, o terapeuta e um horário livre. A confirmação chega por e-mail e WhatsApp.</p>
         </motion.div>
 
-        <div className="stage" ref={stageRef}>
-          <motion.div className="booking"
-            style={reduceMotion ? undefined : { y: cardY, scale: cardScale, rotateX: cardTilt, opacity: cardOpacity, transformPerspective: 1400, transformOrigin: "50% 0%" }}>
+        <div className="stage">
+          <div className="booking">
             <div className="flow">
               <div className="options">
                 <Step n="01" title="Duração" id="duracao">
@@ -117,7 +110,7 @@ export default function App() {
                     {DURATIONS.map(v => <Chip key={v} group="dur" value={String(v)}>{v} min</Chip>)}
                   </RadioGroup>
                 </Step>
-                <Step n="02" title="Terapeuta" id="terapeutas">
+                <Step n="02" title="Terapeuta" id="terapeutas" delay={0.12}>
                   <RadioGroup className="chips" aria-labelledby="terapeutas-t" orientation="horizontal"
                     value={ther} onChange={setTher}>
                     {THERAPISTS.map(t => <Chip key={t.id} group="ther" value={t.id}>{t.name}</Chip>)}
@@ -149,7 +142,7 @@ export default function App() {
               </Step>
             </div>
 
-            <aside className="summary" id="dados" aria-live="polite">
+            <motion.aside className="summary" id="dados" aria-live="polite" {...revealIn(0.15)}>
               <AnimatePresence mode="wait" initial={false}>
                 {done
                   ? <motion.div key="done" {...FADE}>
@@ -161,8 +154,8 @@ export default function App() {
                         onConfirm={confirm} />
                     </motion.div>}
               </AnimatePresence>
-            </aside>
-          </motion.div>
+            </motion.aside>
+          </div>
         </div>
       </main>
     </MotionConfig>
@@ -170,17 +163,17 @@ export default function App() {
   );
 }
 
-// Etapa numerada do fluxo de reserva.
-function Step({ n, title, id, aside, children }) {
+// Etapa numerada do fluxo de reserva; esmaece ao entrar na tela.
+function Step({ n, title, id, aside, delay = 0, children }) {
   return (
-    <section className="step" id={id} aria-labelledby={`${id}-t`}>
+    <motion.section className="step" id={id} aria-labelledby={`${id}-t`} {...revealIn(delay)}>
       <header className="step-head">
         <span className="step-n" aria-hidden="true">{n}</span>
         <h3 id={`${id}-t`}>{title}</h3>
         {aside && <span className="step-aside">{aside}</span>}
       </header>
       {children}
-    </section>
+    </motion.section>
   );
 }
 
@@ -215,7 +208,9 @@ function DayStrip({ day, counts, onPick }) {
       {DAYS.map((d, k) => {
         const c = counts[k];
         return (
-          <Radio key={k} value={dayKey(d)} isDisabled={!c} className="day"
+          <motion.div key={k} initial={{ opacity: 0, y: 14 }} whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, amount: 0.6 }} transition={{ duration: 0.5, ease: EASE, delay: Math.min(k, 10) * 0.035 }}>
+          <Radio value={dayKey(d)} isDisabled={!c} className="day"
             aria-label={`${date(d, { weekday: "long", day: "numeric", month: "long" })}, ${c ? `${c} horários livres` : "sem horários"}`}>
             {({ isSelected }) => (
               <>
@@ -228,6 +223,7 @@ function DayStrip({ day, counts, onPick }) {
               </>
             )}
           </Radio>
+          </motion.div>
         );
       })}
     </RadioGroup>
@@ -280,8 +276,8 @@ function DayBar({ day, n, ther, start, onPick }) {
   );
 }
 
-const LIST = { hidden: {}, show: { transition: { staggerChildren: 0.015 } } };
-const ITEM = { hidden: { opacity: 0, y: 8 }, show: { opacity: 1, y: 0, transition: { duration: 0.35, ease: EASE } } };
+const LIST = { hidden: {}, show: { transition: { staggerChildren: 0.03 } } };
+const ITEM = { hidden: { opacity: 0, y: 14 }, show: { opacity: 1, y: 0, transition: { duration: 0.5, ease: EASE } } };
 
 // Horários do dia: um único grupo de rádio (setas do teclado navegam entre todos), separado em manhã/tarde/noite.
 function Slots({ day, free, start, onPick }) {
@@ -293,7 +289,7 @@ function Slots({ day, free, start, onPick }) {
   ];
   return (
     <RadioGroup aria-labelledby="horario-t" value={start == null ? null : String(start)} onChange={v => onPick(Number(v))}>
-      <motion.div className="periods" variants={LIST} initial="hidden" animate="show">
+      <motion.div className="periods" variants={LIST} initial="hidden" whileInView="show" viewport={{ once: true, amount: 0.15 }}>
         {groups.map(([name, f]) => {
           const g = free.filter(f);
           if (!g.length && name === "Noite") return null;
