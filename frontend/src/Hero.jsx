@@ -109,8 +109,7 @@ export default function Hero({ next, onReserve }) {
           </motion.p>
 
           <motion.h1 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 1, ease: EASE }}
-            style={{ fontFamily: "'Instrument Serif', serif" }}
-            className="hero-title text-4xl md:text-[64px] font-medium tracking-[-0.01em] leading-[1.1] mb-6 max-w-4xl">
+            className="hero-title text-4xl md:text-[58px] font-bold tracking-[-0.03em] leading-[1.06] mb-6 max-w-4xl">
             Uma <em>pausa</em> no seu dia, marcada <br className="hidden md:block" />em poucos segundos
           </motion.h1>
 
