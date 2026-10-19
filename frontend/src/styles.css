@@ -139,7 +139,6 @@
 }
 .hero-logo > div { opacity: var(--logo-opacity); transition: opacity .4s; }
 .hero-shield { background: radial-gradient(ellipse 50% 34% at 50% 52%, var(--hero-shield), transparent 75%); }
-.hero-tagline { color: var(--hero-muted); }
 .hero-title { color: var(--hero-ink); font-family: var(--serif); }
 .hero-btn {
   padding: 12px 40px; border-radius: 999px; border: var(--bw) solid var(--hero-line); color: var(--hero-ink);
@@ -157,8 +156,8 @@
   background: var(--hero-ink); color: var(--hero-bg); cursor: pointer; transition: opacity .2s;
 }
 .hero-go:hover { opacity: .85; }
-.hero-link { color: var(--hero-muted); transition: color .3s; }
-.hero-link:hover { color: var(--hero-ink); }
+.hero-arrow { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 999px; color: var(--hero-muted); transition: color .3s; }
+.hero-arrow:hover { color: var(--hero-ink); }
 
 @media (max-width: 520px) {
   .nav-in { padding-left: 16px; }
@@ -169,7 +168,6 @@
 /* ——— reserva: largo, sem cartão nem bordas; etapas numeradas + coluna de dados ——— */
 .booking { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 400px); gap: 48px clamp(40px, 5vw, 96px); align-items: start; }
 .flow { display: grid; gap: 56px; min-width: 0; }
-.options { display: flex; flex-wrap: wrap; gap: 40px 64px; }
 .step { min-width: 0; scroll-margin-top: 112px; } /* abaixo da barra fixa */
 .step-head { display: flex; align-items: baseline; gap: 12px; margin-bottom: 20px; }
 .step-n { font-size: 12px; font-weight: 600; letter-spacing: .08em; color: var(--primary); font-variant-numeric: tabular-nums; }
@@ -226,8 +224,8 @@
 .bar .ghost, .bar .sel { position: absolute; top: 6px; bottom: 6px; border-radius: 8px; pointer-events: none; }
 .bar .ghost { border: 2px dashed var(--lilac); transition: left .15s ease, width .15s ease; }
 .bar .sel {
-  display: flex; align-items: center; padding-left: 8px; overflow: hidden; white-space: nowrap;
-  background: var(--primary); color: var(--on-primary); font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums;
+  display: flex; align-items: center; justify-content: center; padding: 0 2px; overflow: hidden; white-space: nowrap;
+  background: var(--primary); color: var(--on-primary); font-size: 11px; font-weight: 600; font-variant-numeric: tabular-nums;
   box-shadow: 0 6px 16px -6px rgb(var(--shadow) / .5);
 }
 .axis { position: relative; height: 14px; font-size: 11px; font-weight: 500; color: var(--slate); font-variant-numeric: tabular-nums; }

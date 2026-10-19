@@ -103,28 +103,23 @@ export default function Hero({ next, onReserve }) {
 
       <motion.section style={{ y: contentY, opacity: contentOpacity }} className="relative flex-1 flex flex-col items-center justify-center px-6 pt-24 pb-10">
         <div className="relative z-10 text-center max-w-5xl mx-auto flex flex-col items-center justify-center w-full gap-8">
-          <motion.p initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
-            className="hero-tagline text-[10px] md:text-[11px] font-medium tracking-[0.2em] uppercase mb-4">
-            Massoterapia · agenda online
-          </motion.p>
-
           <motion.h1 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 1, ease: EASE }}
             className="hero-title text-4xl md:text-[64px] font-normal tracking-[-0.01em] leading-[1.1] mb-6 max-w-4xl">
             Uma <em>pausa</em> no seu dia, marcada <br className="hidden md:block" />em poucos segundos
           </motion.h1>
 
+          {/* CTA + setinha logo abaixo (leva aos horários) */}
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}
-            className="min-h-[50px] mt-2 w-full flex justify-center">
-            <NextSlotCta next={next} onReserve={onReserve} />
-          </motion.div>
-
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.8 }}>
-            <a href="#agenda" className="hero-link inline-flex flex-col items-center gap-2 text-[13px] font-medium tracking-wide">
-              Ver todos os horários
+            className="mt-2 w-full flex flex-col items-center gap-3">
+            <div className="min-h-[50px] w-full flex justify-center">
+              <NextSlotCta next={next} onReserve={onReserve} />
+            </div>
+            <motion.a href="#agenda" aria-label="Ver todos os horários" className="hero-arrow"
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.8 }}>
               <motion.span animate={{ y: [0, 4, 0] }} transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }}>
-                <ChevronDown className="w-4 h-4" />
+                <ChevronDown className="w-5 h-5" aria-hidden="true" />
               </motion.span>
-            </a>
+            </motion.a>
           </motion.div>
         </div>
       </motion.section>

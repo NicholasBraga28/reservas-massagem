@@ -4,7 +4,7 @@ import { RadioGroup, Radio, Button, Form, TextField, Label, Input, FieldError, I
 import { ArrowDown } from "lucide-react";
 import Hero, { Navbar } from "./Hero.jsx";
 import {
-  SERVICE, DURATIONS, THERAPISTS, STEP, range, dayKey, hoursOf, slotCount,
+  SERVICE, SESSION_MIN, THERAPISTS, STEP, range, dayKey, hoursOf, slotCount,
   fmt, freeTherapist, starts, allBusy, nextDays,
 } from "./agenda.js";
 
@@ -31,13 +31,12 @@ function relDay(d) {
 }
 
 export default function App() {
-  const [dur, setDur] = useState(60);
   const [ther, setTher] = useState("any");
   const [pickedDay, setPickedDay] = useState(null);
   const [pickedStart, setPickedStart] = useState(null);
   const [done, setDone] = useState(null);
 
-  const n = dur / STEP;
+  const n = SESSION_MIN / STEP; // slots ocupados por uma sessão
   const counts = useMemo(() => DAYS.map(d => starts(d, n, ther).length), [n, ther]);
   // Dia escolhido some se ficar lotado com a nova combinação; cai no primeiro dia livre.
   const day = (pickedDay && counts[DAYS.indexOf(pickedDay)]) ? pickedDay
@@ -45,10 +44,10 @@ export default function App() {
   const free = useMemo(() => starts(day, n, ther), [day, n, ther]);
   const start = free.includes(pickedStart) ? pickedStart : null;
 
-  // Próxima sessão padrão (60 min, qualquer terapeuta) para o CTA do hero.
+  // Próxima sessão livre (qualquer terapeuta) para o CTA do hero.
   const next = useMemo(() => {
     for (const d of DAYS) {
-      const s = starts(d, 60 / STEP, "any");
+      const s = starts(d, n, "any");
       if (s.length) return { day: d, start: s[0], label: `${relDay(d)}, ${fmt(hoursOf(d), s[0])}` };
     }
     return null;
@@ -56,7 +55,7 @@ export default function App() {
 
   const reserveFromHero = useCallback(nx => {
     if (nx) {
-      setDur(60); setTher("any");
+      setTher("any");
       setPickedDay(nx.day); setPickedStart(nx.start); setDone(null);
     }
     document.getElementById("agenda")?.scrollIntoView({ behavior: "smooth" });
@@ -76,7 +75,7 @@ export default function App() {
       code: Math.random().toString(36).slice(2, 7).toUpperCase(),
       name, email,
       when: `${date(day, { weekday: "long", day: "numeric", month: "long" })} às ${fmt(h, start)}`,
-      what: `${SERVICE} · ${dur} min`,
+      what: `${SERVICE} · ${SESSION_MIN} min`,
       ther: nameOf(freeTherapist(day, start, n, ther)),
     });
   }
@@ -97,32 +96,24 @@ export default function App() {
               <span key={w} className="word"><motion.span variants={WORD}>{italic ? <em>{w}</em> : w}</motion.span></span>
             ))}
           </motion.h2>
-          <p className="lede">{SERVICE}. Escolha a duração, o terapeuta e um horário livre. A confirmação chega por e-mail e WhatsApp.</p>
+          <p className="lede">{SERVICE}, sessões de {SESSION_MIN} minutos. Escolha o terapeuta e um horário livre; a confirmação chega por e-mail.</p>
         </motion.div>
 
         <div className="stage">
           <div className="booking">
             <div className="flow">
-              <div className="options">
-                <Step n="01" title="Duração" id="duracao">
-                  <RadioGroup className="chips" aria-labelledby="duracao-t" orientation="horizontal"
-                    value={String(dur)} onChange={v => setDur(Number(v))}>
-                    {DURATIONS.map(v => <Chip key={v} group="dur" value={String(v)}>{v} min</Chip>)}
-                  </RadioGroup>
-                </Step>
-                <Step n="02" title="Terapeuta" id="terapeutas" delay={0.12}>
-                  <RadioGroup className="chips" aria-labelledby="terapeutas-t" orientation="horizontal"
-                    value={ther} onChange={setTher}>
-                    {THERAPISTS.map(t => <Chip key={t.id} group="ther" value={t.id}>{t.name}</Chip>)}
-                  </RadioGroup>
-                </Step>
-              </div>
+              <Step n="01" title="Terapeuta" id="terapeutas">
+                <RadioGroup className="chips" aria-labelledby="terapeutas-t" orientation="horizontal"
+                  value={ther} onChange={setTher}>
+                  {THERAPISTS.map(t => <Chip key={t.id} group="ther" value={t.id}>{t.name}</Chip>)}
+                </RadioGroup>
+              </Step>
 
-              <Step n="03" title="Dia" id="horarios" aside={date(day, { month: "long", year: "numeric" })}>
+              <Step n="02" title="Dia" id="horarios" aside={date(day, { month: "long", year: "numeric" })}>
                 <DayStrip day={day} counts={counts} onPick={chooseDay} />
               </Step>
 
-              <Step n="04" title="Horário" id="horario" aside={`${date(day, { weekday: "long", day: "numeric" })} · ${hoursOf(day)[0]}h às ${hoursOf(day)[1]}h`}>
+              <Step n="03" title="Horário" id="horario" aside={`${date(day, { weekday: "long", day: "numeric" })} · ${hoursOf(day)[0]}h às ${hoursOf(day)[1]}h`}>
                 <div className="bar-wrap">
                   <DayBar day={day} n={n} ther={ther} start={start} onPick={setPickedStart} />
                   <div className="legend" aria-hidden="true">
@@ -149,7 +140,7 @@ export default function App() {
                       <Done booking={done} onAgain={() => { setDone(null); setPickedStart(null); }} />
                     </motion.div>
                   : <motion.div key="form" {...FADE}>
-                      <Summary dur={dur} day={day} start={start}
+                      <Summary day={day} start={start}
                         therapist={start != null ? freeTherapist(day, start, n, ther) : ther === "any" ? null : ther}
                         onConfirm={confirm} />
                     </motion.div>}
@@ -319,7 +310,7 @@ function Slots({ day, free, start, onPick }) {
 }
 
 // Formulário com validação do React Aria: cada campo mostra o próprio erro e o primeiro inválido recebe o foco.
-function Summary({ dur, day, start, therapist, onConfirm }) {
+function Summary({ day, start, therapist, onConfirm }) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
@@ -333,12 +324,12 @@ function Summary({ dur, day, start, therapist, onConfirm }) {
   return (
     <div className="sum">
       <header className="step-head">
-        <span className="step-n" aria-hidden="true">05</span>
+        <span className="step-n" aria-hidden="true">04</span>
         <h3>Seus dados</h3>
       </header>
       <div className="recap">
         <p className="sum-line">
-          {SERVICE}, {dur} min<br />
+          {SERVICE}, {SESSION_MIN} min<br />
           <Swap k={start == null ? "none" : `${dayKey(day)}-${start}`}>
             {start != null
               ? <span>{dayTxt}, {fmt(hoursOf(day), start)}</span>
@@ -361,8 +352,8 @@ function Summary({ dur, day, start, therapist, onConfirm }) {
           <FieldError className="field-error" />
         </TextField>
         <TextField className="field" name="phone" type="tel" isRequired autoComplete="tel" value={phone} onChange={setPhone}
-          validate={v => (v.replace(/\D/g, "").length >= 10 ? null : "Informe o WhatsApp com DDD, ex.: (11) 91234-5678.")}>
-          <Label>WhatsApp</Label>
+          validate={v => (v.replace(/\D/g, "").length >= 10 ? null : "Informe o número de telefone com DDD, ex.: (11) 91234-5678.")}>
+          <Label>Número de telefone</Label>
           <Input inputMode="tel" placeholder="(11) 90000-0000" />
           <FieldError className="field-error" />
         </TextField>

@@ -1,7 +1,7 @@
 // Dados de exemplo e regras da agenda. Tudo aqui vira resposta do backend depois.
 // Serviço único, oferecido pela empresa; o site não mostra preço.
 export const SERVICE = "Massagem clássica";
-export const DURATIONS = [30, 60, 90];
+export const SESSION_MIN = 30; // todas as sessões têm 30 minutos
 export const THERAPISTS = [
   { id: "any", name: "Sem preferência" },
   { id: "ana", name: "Ana" }, { id: "bruno", name: "Bruno" }, { id: "carla", name: "Carla" },
