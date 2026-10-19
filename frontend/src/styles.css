@@ -30,6 +30,7 @@
   /* Tipografia: só Open Sans. Títulos ganham negrito, largura semicondensada e espaçamento justo; texto fica na largura normal. */
   --font: "Open Sans", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif;
   --display-stretch: 87.5%;
+  --serif: "Instrument Serif", Georgia, "Times New Roman", serif; /* exceção: título principal do hero */
   --elev: 0 4px 5px rgb(var(--shadow) / .04), 0 8px 15px rgb(var(--shadow) / .03), 0 30px 50px rgb(var(--shadow) / .09);
   --elev-btn: 0 4px 5px rgb(var(--shadow) / .06), 0 8px 15px rgb(var(--shadow) / .06);
   color-scheme: light;
@@ -139,7 +140,7 @@
 .hero-logo > div { opacity: var(--logo-opacity); transition: opacity .4s; }
 .hero-shield { background: radial-gradient(ellipse 50% 34% at 50% 52%, var(--hero-shield), transparent 75%); }
 .hero-tagline { color: var(--hero-muted); }
-.hero-title { color: var(--hero-ink); font-stretch: var(--display-stretch); }
+.hero-title { color: var(--hero-ink); font-family: var(--serif); }
 .hero-btn {
   padding: 12px 40px; border-radius: 999px; border: var(--bw) solid var(--hero-line); color: var(--hero-ink);
   font-size: 14px; font-weight: 500; cursor: pointer; backdrop-filter: blur(4px); transition: border-color .3s, background-color .3s;

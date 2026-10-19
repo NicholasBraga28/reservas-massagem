@@ -1,5 +1,7 @@
 /* Open Sans (fonte da empresa), versão variável: pesos 300–800, largura 75–100% e itálico verdadeiro. */
 @import url("https://fonts.googleapis.com/css2?family=Open+Sans:ital,wdth,wght@0,75..100,300..800;1,75..100,300..800&display=swap");
+/* Instrument Serif: usada só no título principal do hero. */
+@import url("https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&display=swap");
 @import "tailwindcss";
 
 @theme {
