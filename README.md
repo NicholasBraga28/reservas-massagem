@@ -264,7 +264,7 @@ Os detalhes de cada rota (parâmetros, respostas e erros) estão nas specs em `b
 ### Banco de dados
 
 - **Schema:** `prisma/schema.prisma`.
-- **Migrações:** `prisma/migrations/` (`npm run prisma:migrate` em desenvolvimento, `npm run prisma:deploy` em produção).
+- **Migrações:** `prisma/migrations/`. `npm run prisma:deploy` aplica as migrações existentes; `npm run prisma:migrate` cria uma migração nova durante o desenvolvimento.
 - **Seeds:**
   - `npm run db:bootstrap` cria o primeiro administrador a partir de `BOOTSTRAP_ADMIN_EMAIL` e `BOOTSTRAP_ADMIN_NAME`.
   - `npm run db:seed-demo` cria os usuários de demonstração, sedes (São Paulo e Londrina), salas e agendas.
