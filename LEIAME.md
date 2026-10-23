@@ -13,9 +13,13 @@ Aplicação de reservas de massagens para a empresa.
   - `src/agenda.js` — serviço, sessão de 30 min, terapeutas, horários e regras de disponibilidade (vira API no backend)
   - `src/agenda.check.js` — checagem das regras (`npm run check`)
   - `src/styles.css` — tokens de cor/tipo de todos os temas e estilos da barra, do hero e da agenda (camada `components` do Tailwind)
-- Backend: a definir.
+- `backend/` — API em NestJS + Prisma + PostgreSQL (importada de github.com/A949604/projeto-estagio). Módulos de usuários, salas, agendas, reservas, lista de espera, presença (check-in e jobs), notificações, relatórios, auditoria, regras de negócio e pareamento com Alexa.
+  - `src/` — módulos da API · `prisma/` — schema, migrações e seeds · `test/` — testes e2e · `docs/` — requisitos, specs dos épicos e tickets
+  - Configuração em `.env` (modelo em `.env.example`); banco local via `docker-compose.yml`
+- `.github/workflows/backend-ci.yml` — CI do backend (lint, formatação, testes, build e e2e) a cada push na main e em PRs
 
-Rodar: `cd frontend && npm install && npm run dev` → http://localhost:5173
+Rodar o frontend: `cd frontend && npm install && npm run dev` → http://localhost:5173
+Rodar o backend: `cd backend && npm install && docker compose up -d && npm run prisma:migrate && npm run start:dev` (outros scripts, como seeds e testes, em `backend/package.json`)
 
 ## _paralelos
 _(nenhum ainda)_
