@@ -1,7 +1,10 @@
 node_modules/
 dist/
+coverage/
 .claude/
 .vite/
 *.log
 .env
 .env.*
+!.env.example
+*.tsbuildinfo
