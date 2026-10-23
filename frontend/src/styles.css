@@ -258,6 +258,10 @@
 @media (min-width: 1101px) { .to-form { display: none; } } /* o painel de dados já está ao lado */
 .none { margin: 12px 0 0; color: var(--slate); font-size: 14px; }
 
+/* carregando / erro ao falar com o backend */
+.notice { display: grid; justify-items: start; gap: 16px; max-width: 640px; padding: 28px 32px; border-radius: 20px; background: var(--card); color: var(--slate); outline: var(--bw) solid var(--panel-line); }
+.notice p { margin: 0; }
+
 /* ——— seus dados: painel preenchido, sem borda, fixo ao rolar ——— */
 .summary {
   position: sticky; top: 104px; scroll-margin-top: 112px;
@@ -276,6 +280,12 @@
   height: 48px; padding: 0 14px; border-radius: 10px; font-size: 16px;
   border: var(--bw) solid var(--hair); background: var(--input); color: var(--ink); transition: border-color .2s, box-shadow .2s;
 }
+.field select {
+  height: 48px; padding: 0 40px 0 14px; border-radius: 10px; font-size: 16px; cursor: pointer; appearance: none;
+  border: var(--bw) solid var(--hair); color: var(--ink); transition: border-color .2s, box-shadow .2s;
+  background: var(--input) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' fill='none' stroke='%23888' stroke-width='1.6'%3E%3Cpath d='M1 1.5l5 5 5-5'/%3E%3C/svg%3E") no-repeat right 16px center;
+}
+.field select:focus-visible { outline: none; border-color: var(--primary); box-shadow: 0 0 0 4px color-mix(in srgb, var(--lilac) 30%, transparent); }
 .field input::placeholder { color: var(--mist); }
 .field input[data-focused] { outline: none; border-color: var(--primary); box-shadow: 0 0 0 4px color-mix(in srgb, var(--lilac) 30%, transparent); }
 .field input[data-invalid] { border-color: var(--warn); }

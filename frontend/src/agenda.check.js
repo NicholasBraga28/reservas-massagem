@@ -1,22 +1,18 @@
-// npm run check — falha se as regras da agenda quebrarem
+// npm run check — falha se a leitura dos horários do backend quebrar
 import assert from "node:assert/strict";
-import { nextDays, starts, freeTherapist, isBusy, hoursOf, slotCount, STEP } from "./agenda.js";
+import { startsOn, pickSlot, hoursOf, fmt } from "./agenda.js";
 
-const days = nextDays(14, new Date(2026, 9, 5)); // segunda, 5/out/2026
-const past = new Date(2026, 0, 1);
-const sunday = days.find(d => d.getDay() === 0), saturday = days.find(d => d.getDay() === 6);
+const monday = new Date(2026, 9, 26, 12), sunday = new Date(2026, 9, 25, 12);
+const at = (h, m) => new Date(2026, 9, 26, h, m).toISOString();
+const slot = (h, m, therapistId) => ({ startsAt: at(h, m), endsAt: at(h, m + 30), therapistId, therapistName: therapistId, roomId: "sala" });
+const slots = [slot(9, 0, "t1"), slot(9, 0, "t2"), slot(9, 30, "t2"), slot(9, 10, "t1"), slot(13, 0, "t1")];
 
-assert.deepEqual(starts(sunday, 2, "any", past), [], "domingo fechado");
-
-const sat = starts(saturday, 2, "any", past);
-assert.ok(Math.max(...sat) + 2 <= slotCount(hoursOf(saturday)), "sessão termina até o fechamento");
-
-for (const d of days.filter(hoursOf)) for (const i of starts(d, 3, "any", past)) {
-  const t = freeTherapist(d, i, 3, "any", past);
-  assert.ok([0, 1, 2].every(k => !isBusy(d, t, i + k)), "terapeuta livre a sessão toda");
-}
-
-const monday = new Date(days[0]); monday.setHours(15, 0, 0, 0);
-assert.ok(starts(days[0], 1, "any", monday).every(i => 9 * 60 + i * STEP >= 15 * 60), "sem horários no passado");
+assert.equal(hoursOf(sunday), null, "domingo fechado");
+assert.deepEqual(startsOn(sunday, slots, "any"), [], "sem horários fora do expediente");
+assert.deepEqual(startsOn(monday, slots, "any"), [0, 1, 8], "sem repetir horário com vários terapeutas; ignora fora da grade");
+assert.deepEqual(startsOn(monday, slots, "t1"), [0, 8], "filtra pelo terapeuta escolhido");
+assert.equal(fmt(hoursOf(monday), 8), "13:00", "índice vira horário");
+assert.equal(pickSlot(monday, 1, slots, "any").therapistId, "t2", "sem preferência pega quem está livre");
+assert.equal(pickSlot(monday, 1, slots, "t1"), null, "terapeuta escolhido ocupado no horário");
 
 console.log("agenda ok");

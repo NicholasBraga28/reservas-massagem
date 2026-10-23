@@ -1,14 +1,15 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence, MotionConfig } from "motion/react";
 import { RadioGroup, Radio, Button, Form, TextField, Label, Input, FieldError, I18nProvider } from "react-aria-components";
 import { ArrowDown } from "lucide-react";
 import Hero, { Navbar } from "./Hero.jsx";
 import {
-  SERVICE, SESSION_MIN, THERAPISTS, STEP, range, dayKey, hoursOf, slotCount,
-  fmt, freeTherapist, starts, allBusy, nextDays,
+  SERVICE, SESSION_MIN, STEP, BOOKING_DAYS, range, dayKey, hoursOf, slotCount,
+  fmt, startsOn, pickSlot, nextDays,
 } from "./agenda.js";
+import { getEmployees, getAvailability, reserve } from "./api.js";
 
-const DAYS = nextDays(21);
+const DAYS = nextDays(BOOKING_DAYS);
 const EASE = [0.16, 1, 0.3, 1];
 const SPRING = { type: "spring", stiffness: 500, damping: 38 };
 const FADE = { initial: { opacity: 0, y: 10 }, animate: { opacity: 1, y: 0 }, exit: { opacity: 0, y: -10 }, transition: { duration: 0.25, ease: EASE } };
@@ -20,7 +21,6 @@ const WORD = { hidden: { y: "110%" }, show: { y: 0, transition: { duration: 0.9,
 const REVEAL = { initial: { opacity: 0, y: 32 }, whileInView: { opacity: 1, y: 0 }, viewport: { once: true, amount: 0.2 } };
 const revealIn = (delay = 0) => ({ ...REVEAL, transition: { duration: 0.9, ease: EASE, delay } });
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const nameOf = id => THERAPISTS.find(t => t.id === id).name;
 const date = (d, opts) => d.toLocaleDateString("pt-BR", opts);
 
 function relDay(d) {
@@ -35,23 +35,48 @@ export default function App() {
   const [pickedDay, setPickedDay] = useState(null);
   const [pickedStart, setPickedStart] = useState(null);
   const [done, setDone] = useState(null);
+  // Dados do backend: colaboradores (quem reserva) e horários livres dos próximos dias.
+  const [employees, setEmployees] = useState([]);
+  const [userId, setUserId] = useState(null);
+  const [data, setData] = useState(null);
+  const [loadError, setLoadError] = useState(null);
+  const [reload, setReload] = useState(0);
 
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const list = await getEmployees();
+        if (!list.length) throw new Error("Nenhum colaborador ativo no backend. Rode o seed de demonstração (npm run db:seed-demo).");
+        const from = new Date(), to = new Date(from.getTime() + BOOKING_DAYS * 86_400_000);
+        const availability = await getAvailability(list[0].id, from, to, SESSION_MIN);
+        if (cancelled) return;
+        setEmployees(list); setData(availability); setLoadError(null);
+      } catch (err) {
+        if (!cancelled) setLoadError(err.message);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [reload]);
+
+  const slots = useMemo(() => data?.slots ?? [], [data]);
+  const actor = userId ?? employees[0]?.id;
   const n = SESSION_MIN / STEP; // slots ocupados por uma sessão
-  const counts = useMemo(() => DAYS.map(d => starts(d, n, ther).length), [n, ther]);
+  const counts = useMemo(() => DAYS.map(d => startsOn(d, slots, ther).length), [slots, ther]);
   // Dia escolhido some se ficar lotado com a nova combinação; cai no primeiro dia livre.
   const day = (pickedDay && counts[DAYS.indexOf(pickedDay)]) ? pickedDay
     : DAYS[counts.findIndex(Boolean)] ?? DAYS.find(hoursOf);
-  const free = useMemo(() => starts(day, n, ther), [day, n, ther]);
+  const free = useMemo(() => startsOn(day, slots, ther), [day, slots, ther]);
   const start = free.includes(pickedStart) ? pickedStart : null;
 
   // Próxima sessão livre (qualquer terapeuta) para o CTA do hero.
   const next = useMemo(() => {
     for (const d of DAYS) {
-      const s = starts(d, n, "any");
+      const s = startsOn(d, slots, "any");
       if (s.length) return { day: d, start: s[0], label: `${relDay(d)}, ${fmt(hoursOf(d), s[0])}` };
     }
     return null;
-  }, []);
+  }, [slots]);
 
   const reserveFromHero = useCallback(nx => {
     if (nx) {
@@ -68,16 +93,20 @@ export default function App() {
     f?.focus({ preventScroll: true });
   }
 
-  function confirm({ name, email }) {
-    const h = hoursOf(day);
-    // ponytail: sem backend, a reserva só existe nesta tela; POST /reservas entra aqui
+  // Reserva no backend; erros (horário tomado, limite de reservas, antecedência…) voltam como mensagem para o formulário.
+  async function confirm({ email }) {
+    const slot = pickSlot(day, start, slots, ther);
+    if (!slot) throw new Error("Esse horário não está mais livre. Escolha outro.");
+    const created = await reserve(actor, slot);
     setDone({
-      code: Math.random().toString(36).slice(2, 7).toUpperCase(),
-      name, email,
-      when: `${date(day, { weekday: "long", day: "numeric", month: "long" })} às ${fmt(h, start)}`,
+      code: String(created?.id ?? "").slice(0, 8).toUpperCase(),
+      name: employees.find(u => u.id === actor)?.name ?? "",
+      email,
+      when: `${date(day, { weekday: "long", day: "numeric", month: "long" })} às ${fmt(hoursOf(day), start)}`,
       what: `${SERVICE} · ${SESSION_MIN} min`,
-      ther: nameOf(freeTherapist(day, start, n, ther)),
+      ther: slot.therapistName,
     });
+    setReload(r => r + 1); // atualiza os horários livres
   }
 
   return (
@@ -100,12 +129,20 @@ export default function App() {
         </motion.div>
 
         <div className="stage">
+          {!data ? (
+            <div className="notice" role={loadError ? "alert" : "status"}>
+              {loadError
+                ? <><p>Não foi possível carregar os horários: {loadError}</p>
+                    <Button className="ghost-btn" onPress={() => { setLoadError(null); setReload(r => r + 1); }}>Tentar de novo</Button></>
+                : <p>Carregando horários…</p>}
+            </div>
+          ) : (
           <div className="booking">
             <div className="flow">
               <Step n="01" title="Terapeuta" id="terapeutas">
                 <RadioGroup className="chips" aria-labelledby="terapeutas-t" orientation="horizontal"
                   value={ther} onChange={setTher}>
-                  {THERAPISTS.map(t => <Chip key={t.id} group="ther" value={t.id}>{t.name}</Chip>)}
+                  {[{ id: "any", name: "Sem preferência" }, ...data.therapists].map(t => <Chip key={t.id} group="ther" value={t.id}>{t.name}</Chip>)}
                 </RadioGroup>
               </Step>
 
@@ -115,7 +152,7 @@ export default function App() {
 
               <Step n="03" title="Horário" id="horario" aside={`${date(day, { weekday: "long", day: "numeric" })} · ${hoursOf(day)[0]}h às ${hoursOf(day)[1]}h`}>
                 <div className="bar-wrap">
-                  <DayBar day={day} n={n} ther={ther} start={start} onPick={setPickedStart} />
+                  <DayBar day={day} n={n} free={free} start={start} onPick={setPickedStart} />
                   <div className="legend" aria-hidden="true">
                     <span><i className="l-busy" />Ocupado</span><span><i className="l-sel" />Sua sessão</span>
                   </div>
@@ -141,12 +178,13 @@ export default function App() {
                     </motion.div>
                   : <motion.div key="form" {...FADE}>
                       <Summary day={day} start={start}
-                        therapist={start != null ? freeTherapist(day, start, n, ther) : ther === "any" ? null : ther}
-                        onConfirm={confirm} />
+                        therapist={start != null ? pickSlot(day, start, slots, ther)?.therapistName : data.therapists.find(t => t.id === ther)?.name}
+                        employees={employees} userId={actor} onUser={setUserId} onConfirm={confirm} />
                     </motion.div>}
               </AnimatePresence>
             </motion.aside>
           </div>
+          )}
         </div>
       </main>
     </MotionConfig>
@@ -222,7 +260,7 @@ function DayStrip({ day, counts, onPick }) {
 }
 
 // Barra do dia: passar o mouse mostra a sessão "fantasma", clicar escolhe. Os horários (Slots) são o caminho acessível.
-function DayBar({ day, n, ther, start, onPick }) {
+function DayBar({ day, n, free, start, onPick }) {
   const [hover, setHover] = useState(null);
   const h = hoursOf(day), N = slotCount(h), span = h[1] - h[0];
   const pct = i => `${(i / N) * 100}%`;
@@ -233,7 +271,7 @@ function DayBar({ day, n, ther, start, onPick }) {
     const r = e.currentTarget.getBoundingClientRect();
     return Math.max(0, Math.min(N - n, Math.floor(((e.clientX - r.left) / r.width) * N)));
   };
-  const ok = i => freeTherapist(day, i, n, ther);
+  const ok = i => free.includes(i);
 
   return (
     <>
@@ -242,8 +280,8 @@ function DayBar({ day, n, ther, start, onPick }) {
         onMouseLeave={() => setHover(null)}
         onClick={e => { const i = idxAt(e); if (ok(i)) onPick(i); }}>
         {range(span - 1).map(k => <div key={`h${k}`} className="hr" style={{ left: pct(((k + 1) * 60) / STEP) }} />)}
-        <div key={`${dayKey(day)}-${ther}`} className="bar-layer">
-          {range(N).filter(i => allBusy(day, i, ther)).map(i =>
+        <div key={`${dayKey(day)}-${free.join()}`} className="bar-layer">
+          {range(N).filter(i => !ok(i)).map(i =>
             <div key={i} className="busy" style={{ left: pct(i), width: pct(1) }} />)}
           {past > 0 && <div className="past" style={{ width: pct(past) }} />}
         </div>
@@ -310,15 +348,19 @@ function Slots({ day, free, start, onPick }) {
 }
 
 // Formulário com validação do React Aria: cada campo mostra o próprio erro e o primeiro inválido recebe o foco.
-function Summary({ day, start, therapist, onConfirm }) {
-  const [name, setName] = useState("");
+function Summary({ day, start, therapist, employees, userId, onUser, onConfirm }) {
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
+  const [sending, setSending] = useState(false);
+  const [sendError, setSendError] = useState(null);
   const dayTxt = date(day, { weekday: "long", day: "numeric", month: "short" });
 
-  function submit(e) {
+  async function submit(e) {
     e.preventDefault();
-    onConfirm({ name: name.trim(), email: email.trim(), phone });
+    setSending(true); setSendError(null);
+    try { await onConfirm({ email: email.trim(), phone }); }
+    catch (err) { setSendError(err.message); }
+    finally { setSending(false); }
   }
 
   return (
@@ -336,15 +378,16 @@ function Summary({ day, start, therapist, onConfirm }) {
               : <span className="dim">escolha um horário</span>}
           </Swap>
         </p>
-        <p className="sum-meta">{therapist ? `com ${nameOf(therapist)}` : "terapeuta disponível no horário"}</p>
+        <p className="sum-meta">{therapist ? `com ${therapist}` : "terapeuta disponível no horário"}</p>
       </div>
       <Form className="form" onSubmit={submit}>
-        <TextField className="field" id="f-name" name="name" isRequired autoComplete="name" value={name} onChange={setName}
-          validate={v => (v.trim() ? null : "Informe seu nome.")}>
-          <Label>Nome</Label>
-          <Input />
-          <FieldError className="field-error" />
-        </TextField>
+        {/* Modo de demonstração do backend (AUTH_MODE=header): escolher o colaborador cadastrado identifica quem reserva. */}
+        <div className="field">
+          <label htmlFor="f-name">Nome</label>
+          <select id="f-name" value={userId ?? ""} onChange={e => onUser(e.target.value)}>
+            {employees.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
+          </select>
+        </div>
         <TextField className="field" name="email" type="email" isRequired autoComplete="email" value={email} onChange={setEmail}
           validate={v => (EMAIL.test(v.trim()) ? null : "Informe um e-mail válido, ex.: nome@empresa.com.br.")}>
           <Label>E-mail</Label>
@@ -357,8 +400,9 @@ function Summary({ day, start, therapist, onConfirm }) {
           <Input inputMode="tel" placeholder="(11) 90000-0000" />
           <FieldError className="field-error" />
         </TextField>
-        <Button className="cta" type="submit" isDisabled={start == null}>
-          {start == null ? "Escolha um horário para confirmar" : "Confirmar reserva"}
+        {sendError && <p className="field-error" role="alert">{sendError}</p>}
+        <Button className="cta" type="submit" isDisabled={start == null || sending}>
+          {start == null ? "Escolha um horário para confirmar" : sending ? "Reservando…" : "Confirmar reserva"}
         </Button>
       </Form>
     </div>
