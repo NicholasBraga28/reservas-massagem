@@ -1,0 +1,1 @@
+ALTER TYPE "notification_kind" ADD VALUE 'EMPLOYEE_CHECKED_IN';
