@@ -1,0 +1,293 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  EMPLOYEE
+  THERAPIST
+  HR
+  ADMIN
+
+  @@map("user_role")
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+
+  @@map("user_status")
+}
+
+enum AppointmentStatus {
+  BOOKED
+  CONFIRMED
+  CHECKED_IN
+  POSSIBLE_NO_SHOW
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  RELEASED
+  NO_SHOW
+
+  @@map("appointment_status")
+}
+
+enum WaitlistStatus {
+  WAITING
+  NOTIFIED
+  CONVERTED
+  CANCELLED
+  EXPIRED
+
+  @@map("waitlist_status")
+}
+
+enum NotificationKind {
+  REMINDER
+  BOOKING_CONFIRMATION
+  WAITLIST_VACANCY
+  CHECK_IN_CONFIRMATION
+  POSSIBLE_NO_SHOW
+  EMPLOYEE_CHECKED_IN
+
+  @@map("notification_kind")
+}
+
+enum NotificationStatus {
+  PENDING
+  SENT
+  FAILED
+  CANCELLED
+
+  @@map("notification_status")
+}
+
+enum LocationCode {
+  SAO_PAULO
+  LONDRINA
+
+  @@map("location_code")
+}
+
+model User {
+  id                    String             @id @default(uuid()) @db.Uuid
+  email                 String             @unique
+  name                  String
+  role                  UserRole
+  status                UserStatus         @default(ACTIVE)
+  googleSubject         String?            @unique @map("google_subject")
+  createdAt             DateTime           @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt             DateTime           @updatedAt @map("updated_at") @db.Timestamptz(3)
+  therapist             Therapist?
+  appointments          Appointment[]      @relation("EmployeeAppointments")
+  cancelledAppointments Appointment[]      @relation("CancelledBy")
+  waitlistEntries       WaitlistEntry[]
+  auditEvents           AuditEvent[]       @relation("AuditActor")
+  createdBlocks         ScheduleBlock[]    @relation("BlockCreator")
+  createdPairingCodes   AlexaPairingCode[] @relation("PairingCodeCreator")
+
+  @@map("users")
+}
+
+model Location {
+  id       String       @id @db.Uuid
+  code     LocationCode @unique
+  name     String
+  timezone String       @default("America/Sao_Paulo")
+  rooms    Room[]
+
+  @@map("locations")
+}
+
+model Room {
+  id            String         @id @default(uuid()) @db.Uuid
+  locationId    String         @map("location_id") @db.Uuid
+  location      Location       @relation(fields: [locationId], references: [id])
+  name          String
+  checkInToken  String         @unique @default(uuid()) @map("check_in_token")
+  active        Boolean        @default(true)
+  scheduleSlots ScheduleSlot[]
+  appointments  Appointment[]
+
+  @@unique([locationId, name])
+  @@map("rooms")
+}
+
+model Therapist {
+  id                String             @id @default(uuid()) @db.Uuid
+  userId            String             @unique @map("user_id") @db.Uuid
+  user              User               @relation(fields: [userId], references: [id])
+  scheduleSlots     ScheduleSlot[]
+  blocks            ScheduleBlock[]
+  appointments      Appointment[]
+  waitlist          WaitlistEntry[]
+  alexaDevices      AlexaDevice[]
+  alexaPairingCodes AlexaPairingCode[]
+
+  @@map("therapists")
+}
+
+model ScheduleSlot {
+  id          String    @id @default(uuid()) @db.Uuid
+  therapistId String    @map("therapist_id") @db.Uuid
+  therapist   Therapist @relation(fields: [therapistId], references: [id])
+  roomId      String    @map("room_id") @db.Uuid
+  room        Room      @relation(fields: [roomId], references: [id])
+  startsAt    DateTime  @map("starts_at") @db.Timestamptz(3)
+  endsAt      DateTime  @map("ends_at") @db.Timestamptz(3)
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@index([therapistId, startsAt, endsAt])
+  @@map("schedule_slots")
+}
+
+model ScheduleBlock {
+  id          String    @id @default(uuid()) @db.Uuid
+  therapistId String    @map("therapist_id") @db.Uuid
+  therapist   Therapist @relation(fields: [therapistId], references: [id])
+  startsAt    DateTime  @map("starts_at") @db.Timestamptz(3)
+  endsAt      DateTime  @map("ends_at") @db.Timestamptz(3)
+  reason      String?
+  createdById String    @map("created_by_id") @db.Uuid
+  createdBy   User      @relation("BlockCreator", fields: [createdById], references: [id])
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@index([therapistId, startsAt, endsAt])
+  @@map("schedule_blocks")
+}
+
+model Appointment {
+  id               String            @id @default(uuid()) @db.Uuid
+  employeeId       String            @map("employee_id") @db.Uuid
+  employee         User              @relation("EmployeeAppointments", fields: [employeeId], references: [id])
+  therapistId      String            @map("therapist_id") @db.Uuid
+  therapist        Therapist         @relation(fields: [therapistId], references: [id])
+  roomId           String            @map("room_id") @db.Uuid
+  room             Room              @relation(fields: [roomId], references: [id])
+  startsAt         DateTime          @map("starts_at") @db.Timestamptz(3)
+  endsAt           DateTime          @map("ends_at") @db.Timestamptz(3)
+  status           AppointmentStatus
+  checkedInAt      DateTime?         @map("checked_in_at") @db.Timestamptz(3)
+  sessionStartedAt DateTime?         @map("session_started_at") @db.Timestamptz(3)
+  sessionEndedAt   DateTime?         @map("session_ended_at") @db.Timestamptz(3)
+  cancelledAt      DateTime?         @map("cancelled_at") @db.Timestamptz(3)
+  cancelledById    String?           @map("cancelled_by_id") @db.Uuid
+  cancelledBy      User?             @relation("CancelledBy", fields: [cancelledById], references: [id])
+  createdAt        DateTime          @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt        DateTime          @updatedAt @map("updated_at") @db.Timestamptz(3)
+  notifications    Notification[]
+
+  @@index([therapistId, startsAt, endsAt])
+  @@index([employeeId, startsAt])
+  @@index([roomId, startsAt, endsAt])
+  @@map("appointments")
+}
+
+model WaitlistEntry {
+  id              String         @id @default(uuid()) @db.Uuid
+  employeeId      String         @map("employee_id") @db.Uuid
+  employee        User           @relation(fields: [employeeId], references: [id])
+  therapistId     String?        @map("therapist_id") @db.Uuid
+  therapist       Therapist?     @relation(fields: [therapistId], references: [id])
+  desiredStartsAt DateTime       @map("desired_starts_at") @db.Timestamptz(3)
+  desiredEndsAt   DateTime       @map("desired_ends_at") @db.Timestamptz(3)
+  status          WaitlistStatus @default(WAITING)
+  offeredAt       DateTime?      @map("offered_at") @db.Timestamptz(3)
+  offerExpiresAt  DateTime?      @map("offer_expires_at") @db.Timestamptz(3)
+  createdAt       DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt       DateTime       @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@index([status, desiredStartsAt, desiredEndsAt, createdAt])
+  @@map("waitlist_entries")
+}
+
+model Notification {
+  id            String             @id @default(uuid()) @db.Uuid
+  appointmentId String?            @map("appointment_id") @db.Uuid
+  appointment   Appointment?       @relation(fields: [appointmentId], references: [id])
+  recipientId   String             @map("recipient_id") @db.Uuid
+  kind          NotificationKind
+  status        NotificationStatus @default(PENDING)
+  scheduledFor  DateTime           @map("scheduled_for") @db.Timestamptz(3)
+  sentAt        DateTime?          @map("sent_at") @db.Timestamptz(3)
+  message       String?
+  spokenText    String?            @map("spoken_text")
+  error         String?
+  createdAt     DateTime           @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@index([status, scheduledFor])
+  @@unique([appointmentId, recipientId, kind])
+  @@map("notifications")
+}
+
+model AuditEvent {
+  id         String   @id @default(uuid()) @db.Uuid
+  actorId    String?  @map("actor_id") @db.Uuid
+  actor      User?    @relation("AuditActor", fields: [actorId], references: [id])
+  action     String
+  entityType String   @map("entity_type")
+  entityId   String   @map("entity_id")
+  data       Json?
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@index([entityType, entityId, createdAt])
+  @@index([createdAt])
+  @@map("audit_events")
+}
+
+model AlexaDevice {
+  id                   String             @id @default(uuid()) @db.Uuid
+  deviceId             String             @unique @map("device_id")
+  therapistId          String             @map("therapist_id") @db.Uuid
+  therapist            Therapist          @relation(fields: [therapistId], references: [id])
+  pairedAt             DateTime           @default(now()) @map("paired_at") @db.Timestamptz(3)
+  consumedPairingCodes AlexaPairingCode[]
+
+  @@index([therapistId])
+  @@map("alexa_devices")
+}
+
+model AlexaPairingCode {
+  id                 String       @id @default(uuid()) @db.Uuid
+  code               String
+  therapistId        String       @map("therapist_id") @db.Uuid
+  therapist          Therapist    @relation(fields: [therapistId], references: [id])
+  createdById        String       @map("created_by_id") @db.Uuid
+  createdBy          User         @relation("PairingCodeCreator", fields: [createdById], references: [id])
+  expiresAt          DateTime     @map("expires_at") @db.Timestamptz(3)
+  consumedAt         DateTime?    @map("consumed_at") @db.Timestamptz(3)
+  consumedByDeviceId String?      @map("consumed_by_device_id") @db.Uuid
+  consumedByDevice   AlexaDevice? @relation(fields: [consumedByDeviceId], references: [id])
+  createdAt          DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@index([therapistId])
+  @@map("alexa_pairing_codes")
+}
+
+model BusinessRules {
+  id                                   Int      @id @default(1) @db.SmallInt
+  bookingMinNoticeMinutes              Int      @map("booking_min_notice_minutes")
+  cancellationMinNoticeMinutes         Int      @map("cancellation_min_notice_minutes")
+  lateArrivalToleranceMinutes          Int      @map("late_arrival_tolerance_minutes")
+  checkInEarlyMinutes                  Int      @map("check_in_early_minutes")
+  reminderLeadMinutes                  Int      @map("reminder_lead_minutes")
+  reminderConfirmationToleranceMinutes Int      @map("reminder_confirmation_tolerance_minutes")
+  waitlistAcceptanceMinutes            Int      @map("waitlist_acceptance_minutes")
+  sessionDurationMinutes               Int      @map("session_duration_minutes")
+  slotStepMinutes                      Int      @map("slot_step_minutes")
+  bookingHorizonDays                   Int      @map("booking_horizon_days")
+  maxActiveBookingsPerEmployee         Int      @map("max_active_bookings_per_employee")
+  workDays                             Int[]    @map("work_days")
+  workStartMinutes                     Int      @map("work_start_minutes")
+  lunchStartMinutes                    Int      @map("lunch_start_minutes")
+  lunchEndMinutes                      Int      @map("lunch_end_minutes")
+  workEndMinutes                       Int      @map("work_end_minutes")
+  updatedAt                            DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@map("business_rules")
+}
